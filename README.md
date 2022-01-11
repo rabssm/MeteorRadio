@@ -88,7 +88,6 @@ python analyse_detection.py ~/radar_data
 ```
 
 Example meteor detection as displayed by analyse_detection.py :
-
 ![alt text](https://github.com/rabssm/MeteorRadio/blob/main/doc/sample.png)
 
 
