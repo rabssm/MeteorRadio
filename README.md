@@ -30,7 +30,7 @@ Observation data is produced in the directories:
 
     Archive/        Directory for archiving detections of interest
     Captures/
-    Junk/           Directory for detections whoch are of no interest
+    Junk/           Directory for detections which are of no interest
 
 ```
 
