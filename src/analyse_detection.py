@@ -3,6 +3,7 @@ import datetime
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import matplotlib.colors as colors
+import matplotlib.patheffects as path_effects
 from matplotlib.mlab import psd, specgram
 import scipy.interpolate as si
 import os
@@ -26,6 +27,22 @@ OVERLAP = 0.75           # Overlap (0.75 is 75%)
 
 NUM_FFT = 2**16
 
+HELP_TEXT = 'Command keys:\n' + \
+    'Right arrow    next file\n' + \
+    'Left arrow     previous file\n' + \
+    'Delete         Move file to Junk directory and skip to next file\n' +  \
+    'Backspace      Move file to Junk directory and skip to previous file\n' +  \
+    'u              Restore last deleted files from Junk directory\n' + \
+    'a              Move file to Archive directory\n' + \
+    'c              Move file to Captures directory\n' + \
+    '3              3d plot\n' + \
+    't              Plot with real time axis\n' + \
+    '0              Play audio and create wav file\n' + \
+    'r              Rotate plot\n' + \
+    'F              Show full frequency band\n' + \
+    'S              Save the current plot to png image file in ~/radar_data/\n' + \
+    'q              Close current plot\n' + \
+    'Esc            Exit viewer'
 
 def signalHandler (signum, frame) :
    os._exit(0)
@@ -49,6 +66,13 @@ class MeteorPlotter() :
 
     def set_file_name(self, file_name) :
         self.file_name = file_name
+
+    # Show help window
+    def help(self) :
+        fig = plt.figure(figsize=(10, 5))
+        text = fig.text(0.1, 0.1, HELP_TEXT, fontfamily='monospace', size=12)
+        text.set_path_effects([path_effects.Normal()])
+        plt.show()
 
     # Trap a key press to keep or delete files, or 3 to show the 3d plot
     def press(self, event):
@@ -150,6 +174,9 @@ class MeteorPlotter() :
             print("Colour changed to", self.cmap_color)
             file_index_movement = 0
             plt.close()
+
+        elif event.key == 'f1' :
+            self.help()
 
 
     def plot_specgram(self, Pxx, f, bins, centre_freq, obs_time, flipped=False, utc_time=False, full_frequency_band=False, save_images=False, noplot=False) :
@@ -372,21 +399,7 @@ if __name__ == "__main__":
     # show_3d = args['3d']
 
     # Print command key help
-    print("\nCommand keys:")
-    print("Right arrow\tnext file")
-    print("Left arrow\tprevious file")
-    print("Delete\tMove file to Junk directory")
-    print("u\tRestore last deleted files from Junk directory")
-    print("a\tMove file to Archive directory")
-    print("c\tMove file to Captures directory")
-    print("3\t3d plot")
-    print("t\tPlot with real time axis")
-    print("0\tPlay audio and create wav file")
-    print("r\tRotate plot")
-    print("F\tShow full frequency band")
-    print("S\tSave the current plot to png image file in ~/radar_data/")
-    print("q\tClose current plot")
-    print("Esc\tExit viewer\n")
+    print(HELP_TEXT)
 
     # Make directories required
     make_directories()
