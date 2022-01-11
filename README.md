@@ -87,6 +87,10 @@ To analyze the resultant FFT data in the .npz files in the output directory ~/ra
 python analyse_detection.py ~/radar_data
 ```
 
+Example meteor detection as displayed by analyse_detection.py :
+
+![alt text](https://github.com/rabssm/MeteorRadio/blob/main/doc/sample.png)
+
 
 To make the software run automatically on every boot, add the command to crontab using the command:
 ```
