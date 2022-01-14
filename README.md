@@ -48,7 +48,7 @@ The following additional modules are required to run the software.
 These can be installed with the commands:
 ```
 sudo apt install rtl-sdr python-numpy python-setuptools python-pip libusb-dev python-matplotlib
-pip install pyrtlsdr
+pip install pyrtlsdr scipy
 ```
 
 The pandas package is needed to create the monthly detection counts graphs:
