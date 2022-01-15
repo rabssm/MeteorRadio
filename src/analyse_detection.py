@@ -2,9 +2,8 @@ import numpy as np
 import datetime
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
-import matplotlib.colors as colors
 import matplotlib.patheffects as path_effects
-from matplotlib.mlab import psd, specgram
+from matplotlib.mlab import specgram
 import scipy.interpolate as si
 import os
 import shutil

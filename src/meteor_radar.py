@@ -4,7 +4,7 @@ import numpy as np
 import datetime
 import re
 # import matplotlib.pyplot as plt
-from matplotlib.mlab import psd, specgram
+from matplotlib.mlab import specgram
 import scipy.signal as scipy_signal
 from collections import deque
 from queue import Queue
@@ -608,7 +608,7 @@ if __name__ == "__main__":
     # construct the argument parser and parse the arguments
     ap = argparse.ArgumentParser()
     ap.add_argument("-f", "--frequency", type=float, default=143.05e6, help="Centre frequency. Default is GRAVES (143.05 MHz)")
-    ap.add_argument("-s", "--snr_threshold", type=float, default=40, help="SNR threshold. Default is 40 (~16 dB")
+    ap.add_argument("-s", "--snr_threshold", type=float, default=45, help="SNR threshold. Default is 45 (~16 dB)")
     ap.add_argument("-l", "--limit_save_threshold", type=float, default=0, help="Threshold for limiting saving of detailed data. Default is 0 (disabled)")
     ap.add_argument("-r", "--raw", action='store_true', help="Store raw sample data")
     ap.add_argument("-n", "--noaudio", action='store_true', help="Disable saving of audio data")
