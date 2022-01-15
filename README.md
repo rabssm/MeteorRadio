@@ -56,6 +56,11 @@ The pandas package is needed to create the monthly detection counts graphs:
 pip install pandas
 ```
 
+Playing of audio and conversion of the raw data files to audio .wav files by the analysis software requires the sox package:
+```
+sudo apt install sox
+```
+
 ## Software Configuration File
 
 Create a file named .radar_config in the top level home directory (e.g. ~/.radar_config) containing the following lines:
