@@ -310,6 +310,7 @@ class SampleAnalyser(threading.Thread):
 
         # Initialise variables
         self.noise_deque = deque(maxlen=8)
+        self.median_noise = 10.0
         self.ave_noise = 10.0
 
         self.trigger_count = 0
@@ -386,8 +387,10 @@ class SampleAnalyser(threading.Thread):
     # Check FFT data for a detection, and save the samples if a detection is triggered
     def check_trigger(self, psd_results) :
         mn, sigmedian, sigmax, peak_freq = psd_results
-        self.ave_noise = sigmedian
-        snr = sigmax/self.ave_noise
+        self.median_noise = sigmedian
+
+        # Use the median noise for the SNR calculation
+        snr = sigmax/self.median_noise
 
         stats = ' Mean:{0:8.4f}  Median:{1:8.4f}  Max:{2:10.4f}  PeakF:{3:12.6f}  SNR:{4:10.2f}'.format(mn, sigmedian, sigmax, peak_freq, snr)
         if verbose : print(datetime.datetime.now(), stats)
