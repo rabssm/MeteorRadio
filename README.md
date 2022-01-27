@@ -82,6 +82,7 @@ Information about each meteor detection is logged to files in the ~/radar_data/L
 Filename: RYYYYMMDD_Location.csv  e.g. R20220127_Location.csv
 
 Data format:
+
 Ver,Y,M,D,h,m,s,Bri,Dur,freq,ID,Long,Lat,Alt,Tz
 RMOB,2022,01,27,12,28,19.899,30.55,0.55,-40.77,Location,-1.99,50.99,24.0,0
 
@@ -89,6 +90,7 @@ RMOB,2022,01,27,12,28,19.899,30.55,0.55,-40.77,Location,-1.99,50.99,24.0,0
 Filename: YYYY-MM.csv  e.g. 2022-01.csv
 
 Data format:
+
 user_ID,date,time,signal,noise,frequency,durationc,durations,lat,long,source,timesync,snratio,doppler_estimate
 17,2022-01-01,00:34:34.961687,-6.799,-31.262,2010,0,0.35,50.99,-1.99,GRAVES,NTP,24.46,10
 
