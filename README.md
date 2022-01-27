@@ -75,17 +75,17 @@ TxSource: GRAVES
 TimeSync: NTP
 ```
 
-### Log Output Data
+## Log Output Data
 Information about each meteor detection is logged to files in the ~/radar_data/Logs directory in the following formats.
 
-#### RMOB CSV Format for UKMON (Daily file)
+### RMOB CSV Format for UKMON (Daily file)
 Filename: RYYYYMMDD_Location.csv  e.g. R20220127_Location.csv
 
 Data format:
 Ver,Y,M,D,h,m,s,Bri,Dur,freq,ID,Long,Lat,Alt,Tz
 RMOB,2022,01,27,12,28,19.899,30.55,0.55,-40.77,Location,-1.99,50.99,24.0,0
 
-#### CSV Format for Radio Meteor Detection Collaboration Project (Monthly file)
+### CSV Format for Radio Meteor Detection Collaboration Project (Monthly file)
 Filename: YYYY-MM.csv  e.g. 2022-01.csv
 
 Data format:
