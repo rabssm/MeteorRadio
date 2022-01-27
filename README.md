@@ -26,10 +26,10 @@ Python acquisition software which reads the raw data from the USB dongle and doe
 Observation data is produced in the directories:
 ```
 ~/radar_data/       Detection FFT data files and audio files
-    Logs/           Log files logging each detection in a variety of formats
+    Logs/           Log files logging each detection in a variety of formats (see available formats below)
 
     Archive/        Directory for archiving detections of interest
-    Captures/
+    Captures/       Directory for keeping detections of interest
     Junk/           Directory for detections which are of no interest
 
 ```
@@ -74,6 +74,25 @@ foff: -60
 TxSource: GRAVES
 TimeSync: NTP
 ```
+
+### Log Output Data
+Information about each meteor detection is logged to files in the ~/radar_data/Logs directory in the following formats.
+
+#### RMOB CSV Format for UKMON (Daily file)
+Filename: RYYYYMMDD_Location.csv  e.g. R20220127_Location.csv
+
+Data format:
+Ver,Y,M,D,h,m,s,Bri,Dur,freq,ID,Long,Lat,Alt,Tz
+RMOB,2022,01,27,12,28,19.899,30.55,0.55,-40.77,Location,-1.99,50.99,24.0,0
+
+#### CSV Format for Radio Meteor Detection Collaboration Project (Monthly file)
+Filename: YYYY-MM.csv  e.g. 2022-01.csv
+
+Data format:
+user_ID,date,time,signal,noise,frequency,durationc,durations,lat,long,source,timesync,snratio,doppler_estimate
+17,2022-01-01,00:34:34.961687,-6.799,-31.262,2010,0,0.35,50.99,-1.99,GRAVES,NTP,24.46,10
+
+Data provided for https://radiometeordetection.org/
 
 ## Running the software
 
