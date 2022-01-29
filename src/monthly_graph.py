@@ -1,3 +1,4 @@
+import re
 import pandas as pd
 import argparse
 from matplotlib import pyplot as plt
@@ -8,6 +9,7 @@ import glob
 
 DATA_DIR =  os.path.expanduser('~/radar_data/')
 LOG_DIR = DATA_DIR + 'Logs/'
+CONFIG_FILE = os.path.expanduser('~/.radar_config')
 
 # Main program
 if __name__ == "__main__":
@@ -27,6 +29,20 @@ if __name__ == "__main__":
     graph_zlimit = args['limit']
     month = args['month']
     year = args['year']
+
+    config_file_name = CONFIG_FILE
+    country = ""
+    region = ""
+    tx_source = ""
+    try:
+        with open(config_file_name) as fp:
+            for cnt, line in enumerate(fp):
+                line_words = (re.split("[: \n]+", line))
+                if line_words[0] == 'country' : country = line_words[1]
+                if line_words[0] == 'region' : region = line_words[1]
+                if line_words[0] == 'TxSource' : tx_source = line_words[1] 
+    except Exception as e :
+        print(e)
 
     print("Graphing data for", year, month)
     list_of_files = sorted(glob.glob(LOG_DIR + 'R' + str(year) + '%02d' % month + '*.csv'))
@@ -88,7 +104,7 @@ if __name__ == "__main__":
 
     fig = plt.figure(figsize=(12,9))
     ax = fig.add_subplot(111)
-    ax.set_title('Radio Meteor Detections ' + str(days[0]) + "-" + str(days[-1]) + " " + str(month_string) + str(year) + " (GRAVES -> Hampshire UK)\n", fontsize=16)
+    ax.set_title('Radio Meteor Detections ' + str(days[0]) + "-" + str(days[-1]) + " " + str(month_string) + str(year) + " (" + tx_source + " -> " + region + " " + country + ")\n", fontsize=16)
     qmesh = ax.pcolormesh(x_range, y_range, data_for_mesh.transpose(), cmap='gnuplot', vmin=0, vmax=data_vmax)  # jet and terrain look good too
     colour_bar = fig.colorbar(qmesh,ax=ax)
     colour_bar.set_label("Hourly Meteor Count")

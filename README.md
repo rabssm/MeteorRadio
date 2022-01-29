@@ -73,6 +73,8 @@ ID_NUM: 17
 foff: -60
 TxSource: GRAVES
 TimeSync: NTP
+country: UK
+region: Myregion
 ```
 
 ## Log Output Data
