@@ -7,7 +7,7 @@ This guide assumes basic knowledge of electronics, the Unix environment, and som
 ### Hardware
 
 #### Software Radio
-A Realtek Semiconductor Corp. RTL2838 DVB-T.  The USB dongle is plugged into a Raspberry Pi 3/4 (1-2GB memory) running Raspbian Linux.
+A Realtek Semiconductor Corp. RTL2832U DVB-T.  The USB dongle is plugged into a Raspberry Pi 3/4 (1-2GB memory) running Raspbian Linux.
 
 #### Antenna
 Recommended HB9-2 HB9CV 2 ELEMENT ANTENNA for the GRAVES frequency 143.05 MHz.
