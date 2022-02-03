@@ -70,7 +70,7 @@ class TimedSample():
         self.sample_time = sample_time
 
 
-# Class for logging detections to RMS file
+# Class for logging detections to RMOB file
 class RMBLogger():
 
     def __init__(self):
@@ -126,6 +126,14 @@ class RMBLogger():
 # Class for logging detections to monthly csv file
 class MonthlyCsvLogger():
     def __init__(self):
+
+        self.ID = ""
+        self.Lat = 0.0
+        self.Long = 0.0
+        self.foff = 0.0
+        self.tx_source = ""
+        self.time_sync = ""
+
         self.get_config()
 
     def get_config(self) :
