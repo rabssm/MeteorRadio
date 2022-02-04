@@ -21,7 +21,7 @@ A wifi or wired ethernet connection to the internet is required to maintain the 
 
 ### Software
 
-Python acquisition software which reads the raw data from the USB dongle and does a FFT on each sample block as it's received, then analyses the FFT data to check for a peak in SNR at a frequency +/- 120 Hz of the target frequency (GRAVES 143.05 MHz). After the detection trigger, the software stores the sample data for the next 10s, converts the data to the frequency domain and stores the data in the form of a numpy npz file. There is a tool to visualise and analyse the resultant npz file using matplotlib. Each detection file is a little less than 700 kB in size.
+Python acquisition software which reads the raw data from the USB dongle and does a FFT on each sample block as it's received, then analyses the FFT data to check for a peak in SNR at a frequency +/- 120 Hz of the target frequency (GRAVES 143.05 MHz). After the detection trigger, the software stores the sample data for the next 10 seconds, converts the data to the frequency domain and stores the data in the form of a numpy npz file. There is a tool to visualise and analyse the resultant npz file using matplotlib. Each detection file is a little less than 700 kB in size.
 
 Observation data is produced in the directories:
 ```
@@ -38,10 +38,10 @@ The default frequency for radio meteor detection is the frequency of the GRAVES 
 
 The data acquisition software uses the pyrtlsdr package for reading the USB data from the RTL SDR dongle. Also needs python-matplotlib and numpy for the FFT routines. The analysis software imports matplotlib and scipy.
 
-In terms of resource usage, the acquisition software uses a fairly constant 60% of one CPU core of the Pi4, and about 90% of a single core on a Pi3b. When a detection is made, a separate python MultiProcess is started to perform the FFT on the 10s of stored sample data, and then store the data in the numpy npz format. This process uses 100% of a CPU core for about 10s.
+In terms of resource usage, the acquisition software uses about 60% of one CPU core of the Pi4, and about 90% of one core on a Pi3b. When a detection is made, a separate python MultiProcess is started to perform the FFT on the 10 seconds of stored sample data, and then store the data in the numpy npz format. This process uses 100% of a CPU core for about 10s.
 It is recommended that when running using a Pi3b, the --decimate option is used, as this significantly improves performance of the FFT routines for storing the detections.
 
-It will be necessary to experiment with the -s <SNR> option to determine the optimum SNR detection threshold for the specific antenna/receiving equipment. If there are too many false positives, then the SNR threshold should be increased.
+It will be necessary to experiment with the -s 'SNR' option to determine the optimum SNR detection threshold for the specific antenna/receiving equipment. If there are too many false positives, then the SNR threshold should be increased.
 
 #### Additional Software Modules
 The following additional modules are required to run the software.
@@ -66,15 +66,15 @@ sudo apt install sox
 Create a file named .radar_config in the top level home directory (e.g. ~/.radar_config) containing the following lines:
 ```
 stationID: Mylocation ; Geographical location of the receiver
-longitude: -1.999 ; Geographical longitude of the receiver
-latitude: 50.999 ; Geographical latitude of the receiver
-elevation: 24 ; Altitude above sea level of the receiver in metres
-ID_NUM: 17 ; ID number used for Radio Meteor Detection Collaboration Project
-foff: -60 ; Measured frequency offset of the receiver in Hz
-TxSource: GRAVES ; Name of the tranmitter
-TimeSync: NTP ; Time synchronisation method
-country: UK ; Country
-region: Myregion ; Region within country
+longitude: -1.999     ; Geographical longitude of the receiver
+latitude: 50.999      ; Geographical latitude of the receiver
+elevation: 24         ; Altitude above sea level of the receiver in metres
+ID_NUM: 17            ; ID number used for Radio Meteor Detection Collaboration Project
+foff: -60             ; Measured frequency offset of the receiver in Hz
+TxSource: GRAVES      ; Name of the tranmitter
+TimeSync: NTP         ; Time synchronisation method
+country: UK           ; Country
+region: Myregion      ; Region within country
 ```
 
 ## Log Output Data
