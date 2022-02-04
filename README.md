@@ -65,16 +65,16 @@ sudo apt install sox
 
 Create a file named .radar_config in the top level home directory (e.g. ~/.radar_config) containing the following lines:
 ```
-stationID: Mylocation
-longitude: -1.999
-latitude: 50.999
-elevation: 24
-ID_NUM: 17
-foff: -60
-TxSource: GRAVES
-TimeSync: NTP
-country: UK
-region: Myregion
+stationID: Mylocation ; Geographical location of the receiver
+longitude: -1.999 ; Geographical longitude of the receiver
+latitude: 50.999 ; Geographical latitude of the receiver
+elevation: 24 ; Altitude above sea level of the receiver in metres
+ID_NUM: 17 ; ID number used for Radio Meteor Detection Collaboration Project
+foff: -60 ; Measured frequency offset of the receiver in Hz
+TxSource: GRAVES ; Name of the tranmitter
+TimeSync: NTP ; Time synchronisation method
+country: UK ; Country
+region: Myregion ; Region within country
 ```
 
 ## Log Output Data
