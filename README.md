@@ -21,22 +21,24 @@ A wifi or wired ethernet connection to the internet is required to maintain the 
 
 ### Software
 
-Python acquisition software which reads the raw data from the USB dongle and does a FFT on each sample block as it's received, then analyses the FFT data to check for a peak in SNR at a frequency +/- 120 Hz of the target frequency (GRAVES 143.05 MHz). After the detection trigger, the software stores the sample data for the next 10 seconds, converts the data to the frequency domain and stores the data in the form of a numpy npz file. There is a tool to visualise and analyse the resultant npz file using matplotlib. Each detection file is a little less than 700 kB in size.
+The acquisition software reads the raw data from the USB dongle and does an FFT on each sample block as it is received. The FFT of each sample block is then analysed to check for a peak in SNR at a frequency +/- 120 Hz of the target frequency (GRAVES 143.05 MHz).
+After each detection trigger, the software stores the sample data for the next 10 seconds, converts the sample data to the frequency domain and stores the data. The detection data is stored in 2 files, the raw audio data in the form of a raw audio file, and the FFT data in the form of a numpy npz file.
+There is a tool to visualise and analyse the resultant npz files using matplotlib. Each detection file is a little less than 700 kB in size.
 
 Observation data is produced in the directories:
 ```
 ~/radar_data/       Detection FFT data files and audio files
     Logs/           Log files logging each detection in a variety of formats (see available formats below)
-
     Archive/        Directory for archiving detections of interest
     Captures/       Directory for keeping detections of interest
     Junk/           Directory for detections which are of no interest
 
 ```
 
-The default frequency for radio meteor detection is the frequency of the GRAVES transmitter 143.05 MHz.
+The acquisition software tunes the USB software radio to a central frequency 2 kHz below the required frequency. This is so that a meteor detection yields an approximately 2 kHz audible tone on the upper sideband. The default frequency for radio meteor detection is the frequency of the GRAVES transmitter 143.05 MHz. The required frequency can be changed using the -f option.
 
-The data acquisition software uses the pyrtlsdr package for reading the USB data from the RTL SDR dongle. Also needs python-matplotlib and numpy for the FFT routines. The analysis software imports matplotlib and scipy.
+The acquisition software uses the pyrtlsdr package for reading the USB data from the RTL SDR dongle. It also needs python-matplotlib and numpy for the FFT routines.
+The analysis software imports matplotlib and scipy.
 
 In terms of resource usage, the acquisition software uses about 60% of one CPU core of the Pi4, and about 90% of one core on a Pi3b. When a detection is made, a separate python MultiProcess is started to perform the FFT on the 10 seconds of stored sample data, and then store the data in the numpy npz format. This process uses 100% of a CPU core for about 10s.
 It is recommended that when running using a Pi3b, the --decimate option is used, as this significantly improves performance of the FFT routines for storing the detections.
@@ -107,19 +109,19 @@ To get help, run the command:
 python meteor_radar.py -h
 ```
 
-To start the software in verbose mode with a detection threshold SNR of 45, run the command:
+To start the acquisition software in verbose mode with a detection threshold SNR of 45, run the command:
 ```
 python meteor_radar.py -v -s 45
 ```
 
-To analyze the resultant FFT data in the .npz files in the output directory ~/radar_data :
+To analyze the meteor detection FFT data in the .npz files in the output directory ~/radar_data :
 ```
 python analyse_detection.py ~/radar_data
 ```
 
-Example meteor detection as displayed by analyse_detection.py :
+Below is an example of a meteor detection spectrogram as displayed by analyse_detection.py. In this example, the head echo can be clearly seen in the line moving across the plot from the right towards the centre. This line gives an indication of the radial velocity and deceleration of the meteor from the Doppler frequency shift.
+The later vertical component of the plot is the radio echo from the plasma trail. This echo from the plasma trail can also show Doppler frequency shifts due to high altitude winds.
 ![alt text](https://github.com/rabssm/MeteorRadio/blob/main/doc/sample.png)
-
 
 To make the software run automatically on every boot, add the command to crontab using the command:
 ```
@@ -128,6 +130,6 @@ crontab -e
 
 Then add the following line at the end of the crontab (e.g.) :
 ```
-@reboot sleep 60 && python -u /home/pi/source/MeteorRadar/src/meteor_radar.py -s 45
+@reboot sleep 60 && python /home/pi/source/MeteorRadar/src/meteor_radar.py -s 45
 ```
 
