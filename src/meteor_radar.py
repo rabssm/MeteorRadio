@@ -33,10 +33,11 @@ SAMPLES_BEFORE_TRIGGER = 6            # Number of samples wanted before the trig
 
 # RTL SDR settings - 225001 to 300000 and 900001 to 3200000
 SAMPLE_RATE = 300000       #    960000 (262144-causes noise near 143.05) 262144, 240000
+SDR_GAIN = 50
 DECIMATION = 8             # Reduce audio sample rate from 300k to 37.5k
 
 # FFT Settings
-FREQUENCY_OFFSET = -2000   # Tuning frequency offset from centre
+FREQUENCY_OFFSET = -2000   # Tuning frequency offset from centre (so signal appears as 2kHz audio on upper sideband)
 DETECTION_FREQUENCY_BAND = [-120,+120]    # Band for detection is +/- F Hz
 NOISE_CALCULATION_BAND = [-500,+500]    # Band for noise calculation is +/- F Hz
 OVERLAP = 0.75             # Overlap for detection trigger (0.75 is 75% - this keeps one core of the Pi4 at 60% load)
@@ -75,7 +76,7 @@ class RMBLogger():
 
     def __init__(self):
 
-        self.ID = ""
+        self.id = ""
         self.Long = 0.0
         self.Lat = 0.0
         self.Alt = 0.0
@@ -90,7 +91,7 @@ class RMBLogger():
             with open(config_file_name) as fp:
                 for cnt, line in enumerate(fp):
                     line_words = (re.split("[: \n]+", line))
-                    if line_words[0] == 'stationID' : self.ID = line_words[1]
+                    if line_words[0] == 'stationID' : self.id = line_words[1]
                     if line_words[0] == 'latitude'  : self.Lat = float(line_words[1])
                     if line_words[0] == 'longitude' : self.Long = float(line_words[1])
                     if line_words[0] == 'elevation' : self.Alt = float(line_words[1])
@@ -98,13 +99,13 @@ class RMBLogger():
         except Exception as e :
             print(e)
             syslog.syslog(syslog.LOG_DEBUG, str(e))
-        # print(self.ID,self.Lat,self.Long,self.Alt)
+        # print(self.id,self.Lat,self.Long,self.Alt)
 
 
     # Write to RMB format R<date>_<location>.csv file as:
     # Ver,Y,M,D,h,m,s,Bri,Dur,freq,ID,Long,Lat,Alt,Tz
     def log_data(self,obs_time,Bri,Dur,freq) :
-        filename = "R" + obs_time.strftime("%Y%m%d_") + self.ID + ".csv"
+        filename = "R" + obs_time.strftime("%Y%m%d_") + self.id + ".csv"
         try:
             rmb_file = open(LOG_DIR + filename, "r")
             rmb_file.close()
@@ -115,7 +116,7 @@ class RMBLogger():
 
         try:
             rmb_file = open(LOG_DIR + filename, "a")
-            rmb_string = '{0:s},{1:s},{2:.2f},{3:.2f},{4:.2f},{5:s},{6:.5f},{7:.5f},{8:.1f},{9:d}\n'.format(self.Ver, obs_time.strftime("%Y,%m,%d,%H,%M,%S.%f")[:-3], Bri, Dur, freq, self.ID, self.Long, self.Lat, self.Alt, self.Tz)
+            rmb_string = '{0:s},{1:s},{2:.2f},{3:.2f},{4:.2f},{5:s},{6:.5f},{7:.5f},{8:.1f},{9:d}\n'.format(self.Ver, obs_time.strftime("%Y,%m,%d,%H,%M,%S.%f")[:-3], Bri, Dur, freq, self.id, self.Long, self.Lat, self.Alt, self.Tz)
             syslog.syslog(syslog.LOG_DEBUG, "Writing to RMB file " + filename + " " + rmb_string)
             rmb_file.write(rmb_string)
             rmb_file.close()
@@ -127,7 +128,7 @@ class RMBLogger():
 class MonthlyCsvLogger():
     def __init__(self):
 
-        self.ID = ""
+        self.id = ""
         self.Lat = 0.0
         self.Long = 0.0
         self.foff = 0.0
@@ -142,7 +143,7 @@ class MonthlyCsvLogger():
             with open(config_file_name) as fp:
                 for cnt, line in enumerate(fp):
                     line_words = (re.split("[: \n]+", line))
-                    if line_words[0] == 'ID_NUM'    : self.ID = line_words[1]
+                    if line_words[0] == 'ID_NUM'    : self.id = line_words[1]
                     if line_words[0] == 'latitude'  : self.Lat = float(line_words[1])
                     if line_words[0] == 'longitude' : self.Long = float(line_words[1])
                     if line_words[0] == 'foff'      : self.foff = float(line_words[1])
@@ -171,7 +172,7 @@ class MonthlyCsvLogger():
             doppler_estimate = int((float(frequency)) - float(centre_freq) - self.foff)
             offset_frequency = int(2000 + (float(frequency)) - float(centre_freq) - self.foff)
 
-            output_line = "%s,%s,%s,%.3f,%.3f,%s,%s,%.2f,%.2f,%.2f,%s,%s,%.2f,%s\n" % (self.ID, date, time, signal, noise, offset_frequency, '0', duration, self.Lat, self.Long, self.tx_source, self.time_sync, max_snr, doppler_estimate)
+            output_line = "%s,%s,%s,%.3f,%.3f,%s,%s,%.2f,%.2f,%.2f,%s,%s,%.2f,%s\n" % (self.id, date, time, signal, noise, offset_frequency, '0', duration, self.Lat, self.Long, self.tx_source, self.time_sync, max_snr, doppler_estimate)
             if verbose : print("csv output:", output_line)
 
             filename = obs_time.strftime('%Y-%m.csv')
@@ -298,7 +299,7 @@ class CaptureStatistics() :
         return self.meteor_detections
 
 
-
+# Class for recording meteor detections data
 class MeteorDetection() :
 
     def __init__(self, start_time, duration, initial_frequency, max_snr) :
@@ -566,15 +567,15 @@ class SampleAnalyser(threading.Thread):
         f += self.sdr_freq_mhz
         f = f[self.detection_band]
 
-        # Calculate the mean (noise) level over the larger noise calculation band
-        nX = np.float16(Pxx[self.noise_calculation_band])
+        # Calculate the mean and median (noise) level over the larger noise calculation band
+        nx = np.float16(Pxx[self.noise_calculation_band])
+        mn = np.mean(nx)
+        sigmedian = np.median(nx)
 
         # Calculate the signal level stats over the detection band
-        X = np.float16(Pxx[self.detection_band])
-        mn = np.mean(nX)
-        sigmedian = np.median(nX)
-        sigmax = np.max(X)
-        maxpos = np.argmax(np.max(X, axis=1))
+        x = np.float16(Pxx[self.detection_band])
+        sigmax = np.max(x)
+        maxpos = np.argmax(np.max(x, axis=1))
         peak_freq = f[maxpos]
 
         psd_queue.put((mn, sigmedian, sigmax, peak_freq))
@@ -586,9 +587,9 @@ async def streaming():
     # configure device
     # sdr = RtlSdr()
     sdr.sample_rate = SAMPLE_RATE
-    sdr.center_freq = centre_freq + FREQUENCY_OFFSET       # GRAVES
+    sdr.center_freq = centre_freq + FREQUENCY_OFFSET       # Tuning frequency for SDR
     # sdr.set_bandwidth(10e3)
-    sdr.gain = 50
+    sdr.gain = SDR_GAIN
     # sdr.freq_correction = 0.0      # PPM
 
     # Loop forever taking samples
