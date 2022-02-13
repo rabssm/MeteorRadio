@@ -19,11 +19,27 @@ Recommend that the latest version of Raspbian is installed. At the time of writi
 A wifi or wired ethernet connection to the internet is required to maintain the NTP time.
 
 
-### Software
-
-The acquisition software reads the raw data from the USB dongle and does an FFT on each sample block as it is received. The FFT of each sample block is then analysed to check for a peak in SNR at a frequency +/- 120 Hz of the target frequency (GRAVES 143.05 MHz).
+## Software
+### Acquisition and Detection Software
+The acquisition software reads the raw data from the USB dongle and does an FFT on each sample block as it is received. The FFT of each sample block is then analysed to check for a peak signal above the SNR threshold at a frequency +/- 120 Hz of the target frequency (GRAVES 143.05 MHz).
 After each detection trigger, the software stores the sample data for the next 10 seconds, converts the sample data to the frequency domain and stores the data. The detection data is stored in 2 files, the raw audio data in the form of a raw audio file, and the FFT data in the form of a numpy npz file.
-There is a tool to visualise and analyse the resultant npz files using matplotlib. Each detection file is a little less than 700 kB in size.
+
+Output filename format.
+
+```
+Audio file:     AUD_FFFFFFFFF_YYYYMMDD_HHMMSS_%%%%%%.raw
+FFT file:       SPG_FFFFFFFFF_YYYYMMDD_HHMMSS_%%%%%%.npz
+
+where:
+FFFFFFFFF               is the centre frequency in Hz
+YYYYMMDD_HHMMSS_%%%%%%  is the date and time of the start of the observation to microsecond resolution
+
+e.g.
+AUD_143050000_20220206_132454_941629.raw
+SPG_143050000_20220206_132454_941629.npz
+```
+
+Audio and FFT detection files are about 800 kB in size.
 
 Observation data is produced in the directories:
 ```
@@ -35,17 +51,19 @@ Observation data is produced in the directories:
 
 ```
 
-The acquisition software tunes the USB software radio to a central frequency 2 kHz below the required frequency. This is so that a meteor detection yields an approximately 2 kHz audible tone on the upper sideband. The default frequency for radio meteor detection is the frequency of the GRAVES transmitter 143.05 MHz. The required frequency can be changed using the -f option.
+The software tunes the USB software radio to a central frequency 2 kHz below the required frequency. This is so that a meteor detection yields an approximately 2 kHz audible tone on the upper sideband. The default frequency for radio meteor detection is the frequency of the GRAVES transmitter 143.05 MHz. The required frequency can be changed using the -f option.
 
-The acquisition software uses the pyrtlsdr package for reading the USB data from the RTL SDR dongle. It also needs python-matplotlib and numpy for the FFT routines.
-The analysis software imports matplotlib and scipy.
+The software uses the pyrtlsdr package for reading the USB data from the RTL SDR dongle. It also needs python-matplotlib and numpy for the FFT routines.
 
 In terms of resource usage, the acquisition software uses about 60% of one CPU core of the Pi4, and about 90% of one core on a Pi3b. When a detection is made, a separate python MultiProcess is started to perform the FFT on the 10 seconds of stored sample data, and then store the data in the numpy npz format. This process uses 100% of a CPU core for about 10s.
 It is recommended that when running using a Pi3b, the --decimate option is used, as this significantly improves performance of the FFT routines for storing the detections.
 
-It will be necessary to experiment with the -s 'SNR' option to determine the optimum SNR detection threshold for the specific antenna/receiving equipment. If there are too many false positives, then the SNR threshold should be increased.
+Note. It may be necessary to experiment with the -s 'SNR' option to determine the optimum SNR detection threshold for the specific antenna/receiving equipment. The default SNR is set to 45 (~16dB). If there are too many false positives, then the SNR threshold should be increased.
 
-#### Additional Software Modules
+### Analysis Software
+The analyse_detection.py matplotlib tool can be used to visualise and analyse the resultant detection npz files. This tool imports matplotlib and scipy.
+
+### Additional Software Modules
 The following additional modules are required to run the software.
 These can be installed with the commands:
 ```
@@ -64,7 +82,6 @@ sudo apt install sox
 ```
 
 ## Software Configuration File
-
 Create a file named .radar_config in the top level home directory (e.g. ~/.radar_config) containing the following lines:
 ```
 stationID: Mylocation ; Geographical location of the receiver
@@ -104,7 +121,7 @@ Data provided for https://radiometeordetection.org/
 
 ## Running the software
 
-To get help, run the command:
+To get help using the acquisition software, run the command:
 ```
 python meteor_radar.py -h
 ```
