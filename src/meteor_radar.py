@@ -551,7 +551,6 @@ class SampleAnalyser(threading.Thread):
         syslog.syslog(syslog.LOG_DEBUG, "Radio detection stats log " + capture_statistics.detection_time.strftime("%d/%m/%Y %H:%M:%S.%f")[:-3] + " " + stats_string)
 
         # Log to RMB .csv file
-        print(capture_statistics.detection_freq, centre_freq)
         self.rmb_logger.log_data(capture_statistics.detection_time, capture_statistics.snr, capture_statistics.detection_duration, (capture_statistics.detection_freq*1e6) - centre_freq)
 
         # Produce the log for the monthly csv reports
