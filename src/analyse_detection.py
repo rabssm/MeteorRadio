@@ -403,7 +403,7 @@ if __name__ == "__main__":
     # Make directories required
     make_directories()
 
-
+    # Create a meteor plotter object
     meteor_plotter = MeteorPlotter()
 
     file_index = 0
@@ -447,11 +447,28 @@ if __name__ == "__main__":
                 Pxx = np.concatenate((Pxx, new_Pxx), axis=1)
                 bins = np.concatenate((bins, new_bins), axis=0)
 
-        meteor_plotter = MeteorPlotter()
         meteor_plotter.set_file_name(file_names[0])
         meteor_plotter.plot_specgram(Pxx, f, bins, centre_freq, obs_times[0], flipped=False)
 
         os._exit(0)
+
+
+    if save_images :
+        file_names = file_or_dir
+        for index, file_name in enumerate(file_names) :
+            # Unpack the data
+            obs_time, centre_freq, sample_rate = get_observation_data(file_name)
+            npz_data = np.load(file_name)
+
+            bins = npz_data['bins']
+            if sample_rate is not None : bins /= sample_rate
+            f = npz_data['f']
+            Pxx = npz_data['Pxx']
+
+            meteor_plotter.set_file_name(file_name)
+            meteor_plotter.plot_specgram(Pxx, f, bins, centre_freq, obs_time, flipped=False, save_images=True, noplot=True)
+
+        os._exit(0)        
 
 
     # Get all filenames in directory to allow scrolling through
@@ -513,6 +530,4 @@ if __name__ == "__main__":
         # Allow the index to be circular
         if file_index == len(filenames) : file_index = 0
         elif file_index < 0 : file_index = len(filenames) - 1
-
-
 
