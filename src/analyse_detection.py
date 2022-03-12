@@ -127,9 +127,9 @@ class MeteorPlotter() :
         elif event.key == '3':                 # 3 key shows the 3d plot
             self.plot_3dspecgram(Pxx, f, bins, centre_freq)
         elif event.key == 'r':                 # r key rotates the plot
-            self.plot_specgram(Pxx, f, bins, centre_freq, obs_time, flipped=True)
-        elif event.key == 't':                 # t key rotates the plot and sets x axis to UTC
             self.plot_specgram(Pxx, f, bins, centre_freq, obs_time, flipped=True, utc_time=True)
+        elif event.key == 't':                 # t key rotates the plot and sets x axis to UTC
+            self.plot_specgram(Pxx, f, bins, centre_freq, obs_time, flipped=False, utc_time=True)
         elif event.key == 'F':                 # F key shows full frequency band
             self.plot_specgram(Pxx, f, bins, centre_freq, obs_time, full_frequency_band=True)
         elif event.key == 'h':                 # h key shows histogram
