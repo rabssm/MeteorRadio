@@ -54,7 +54,7 @@ def signalHandler (signum, frame) :
     # If we have a SIGUSR1 (kill -USR1 <pid>) signal, save current sample buffer
     if signum == signal.SIGUSR1 :
         syslog.syslog(syslog.LOG_DEBUG, "SIGUSR1 caught")
-        sample_analyser.save_samples(sdr.sample_rate)
+        sample_analyser.save_samples()
     else:
         os._exit(0)
 
