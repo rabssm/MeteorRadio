@@ -363,6 +363,7 @@ class SampleAnalyser(threading.Thread):
         print("Samples length:", samples_length, "Sample rate:", self.sdr_sample_rate)
         print("Time for each sample", self.sample_time)
         print("SDR tuning frequency:", sdr.center_freq)
+        print("SDR gain:", sdr.gain)
 
         # Do a first PSD to get frequency bands
         decimated_samples = scipy_signal.decimate(samples, DECIMATION)
@@ -588,7 +589,7 @@ async def streaming():
     sdr.sample_rate = SAMPLE_RATE
     sdr.center_freq = centre_freq + FREQUENCY_OFFSET       # Tuning frequency for SDR
     # sdr.set_bandwidth(10e3)
-    sdr.gain = SDR_GAIN
+    sdr.gain = sdr_gain
     # sdr.freq_correction = 0.0      # PPM
 
     # Loop forever taking samples
@@ -619,6 +620,7 @@ if __name__ == "__main__":
     # construct the argument parser and parse the arguments
     ap = argparse.ArgumentParser()
     ap.add_argument("-f", "--frequency", type=float, default=143.05e6, help="Centre frequency. Default is GRAVES (143.05 MHz)")
+    ap.add_argument("-g", "--gain", type=float, default=SDR_GAIN, help="SDR tuner gain (0-50). Default is 50")
     ap.add_argument("-s", "--snr_threshold", type=float, default=45, help="SNR threshold. Default is 45 (~16 dB)")
     ap.add_argument("-l", "--limit_save_threshold", type=float, default=0, help="Threshold for limiting saving of detailed data. Default is 0 (disabled)")
     ap.add_argument("-r", "--raw", action='store_true', help="Store raw sample data")
@@ -628,6 +630,7 @@ if __name__ == "__main__":
     args = vars(ap.parse_args())
 
     centre_freq = args['frequency']
+    sdr_gain = args['gain']
     snr_threshold = args['snr_threshold']
     data_saving_threshold = args['limit_save_threshold']
     save_raw_samples = args['raw']
