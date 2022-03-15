@@ -589,7 +589,8 @@ async def streaming():
     sdr.sample_rate = SAMPLE_RATE
     sdr.center_freq = centre_freq + FREQUENCY_OFFSET       # Tuning frequency for SDR
     # sdr.set_bandwidth(10e3)
-    sdr.gain = sdr_gain
+    if sdr_gain == 'auto' : sdr.gain = sdr_gain
+    else: sdr.gain = float(sdr_gain)
     # sdr.freq_correction = 0.0      # PPM
 
     # Loop forever taking samples
@@ -620,7 +621,7 @@ if __name__ == "__main__":
     # construct the argument parser and parse the arguments
     ap = argparse.ArgumentParser()
     ap.add_argument("-f", "--frequency", type=float, default=143.05e6, help="Centre frequency. Default is GRAVES (143.05 MHz)")
-    ap.add_argument("-g", "--gain", type=float, default=SDR_GAIN, help="SDR tuner gain (0-50). Default is 50")
+    ap.add_argument("-g", "--gain", type=str, default=str(SDR_GAIN), help="SDR tuner gain (0-50, auto). Default is 50")
     ap.add_argument("-s", "--snr_threshold", type=float, default=45, help="SNR threshold. Default is 45 (~16 dB)")
     ap.add_argument("-l", "--limit_save_threshold", type=float, default=0, help="Threshold for limiting saving of detailed data. Default is 0 (disabled)")
     ap.add_argument("-r", "--raw", action='store_true', help="Store raw sample data")
