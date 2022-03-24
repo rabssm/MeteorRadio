@@ -108,6 +108,8 @@ Ver,Y,M,D,h,m,s,Bri,Dur,freq,ID,Long,Lat,Alt,Tz
 RMOB,2022,01,27,12,28,19.899,30.55,0.55,-40.77,Location,-1.99,50.99,24.0,0
 ```
 
+Data provided in RMOB csv format to https://ukmeteornetwork.co.uk/
+
 ### CSV Format for Radio Meteor Detection Collaboration Project (Monthly file)
 Filename: YYYY-MM.csv  e.g. 2022-01.csv
 
