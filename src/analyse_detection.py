@@ -71,7 +71,7 @@ class MeteorPlotter() :
         fig = plt.figure(figsize=(10, 5))
         text = fig.text(0.1, 0.1, HELP_TEXT, fontfamily='monospace', size=12)
         text.set_path_effects([path_effects.Normal()])
-        plt.show()
+        plt.show(block=False)
 
     # Trap a key press to keep or delete files, or 3 to show the 3d plot
     def press(self, event):
@@ -259,7 +259,7 @@ class MeteorPlotter() :
             plt.gca().format_coord = fmt
         ##########################################
 
-        if not noplot: plt.show()
+        if not noplot: plt.show(block=len(plt.get_fignums()) < 2)
 
 
     def plot_3dspecgram(self, Pxx, f, bins, centre_freq) :
@@ -271,7 +271,8 @@ class MeteorPlotter() :
 
         # Plot the 3d spectrogram
         fig = plt.figure(figsize=(10,7.5))
-        ax = fig.gca(projection='3d')
+        ax = plt.axes(projection='3d')
+        # ax = fig.gca(projection='3d')
         f -= (centre_freq/1e6)
         f *= 1e6
         ax.plot_surface(bins[None, :], f[:, None], 10.0*np.log10(Pxx), cmap='coolwarm')
@@ -290,7 +291,7 @@ class MeteorPlotter() :
             print("Saving", image_filename)
             plt.savefig(image_filename)
 
-        if not noplot: plt.show()
+        if not noplot: plt.show(block=False)
 
 
     def plot_psd(self, Pxx, f, centre_freq) :
@@ -311,14 +312,14 @@ class MeteorPlotter() :
             print("Saving", image_filename)
             plt.savefig(image_filename)
 
-        if not noplot: plt.show()
+        if not noplot: plt.show(block=False)
 
 
     def plot_hist(self, Pxx) :
 
         fig, ax = plt.subplots(figsize=(9,7))
         ax.hist(Pxx.flatten(), bins=500, range=(0,0.2))
-        plt.show()
+        plt.show(block=False)
 
 
 def get_observation_data(filename) :
