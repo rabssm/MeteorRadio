@@ -76,7 +76,7 @@ pip install pyrtlsdr scipy
 
 The pandas package is needed to create the monthly detection counts graphs:
 ```
-pip install -y pandas
+pip install pandas
 ```
 
 Playing of audio and conversion of the raw data files to audio .wav files by the analysis software requires the sox package:
