@@ -21,6 +21,7 @@ A wifi or wired ethernet connection to the internet is required to maintain the 
 
 ## Software
 ### Acquisition and Detection Software
+The software uses python3.
 The acquisition software reads the raw data from the USB radio and does a fast fourier transform (FFT) on each sample block as it is received. The FFT of each sample block is then analysed to check for a peak signal above the SNR threshold at a frequency +/- 120 Hz of the target frequency (GRAVES 143.05 MHz).
 After each detection trigger, the software stores the sample data for the next 10 seconds, converts the sample data to the frequency domain and stores the data. The detection data is stored in 2 files, the raw audio data in the form of a raw audio file, and the FFT data in the form of a numpy npz file.
 
@@ -70,7 +71,7 @@ The software uses the pyrtlsdr package for reading the USB data from the RTL SDR
 These can be installed with the commands:
 ```
 sudo apt update
-sudo apt install -y rtl-sdr python-numpy python-setuptools python-pip libusb-dev python-matplotlib
+sudo apt install -y rtl-sdr python-numpy python-setuptools python-pip libusb-dev python-matplotlib libatlas-base-dev
 pip install pyrtlsdr scipy
 ```
 
