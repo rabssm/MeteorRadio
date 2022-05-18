@@ -17,6 +17,7 @@ import argparse
 from multiprocessing import Process
 
 DATA_DIR =  os.path.expanduser('~/radar_data/')
+CAPTURES_DIR = DATA_DIR + 'Captures/'
 LOG_DIR = DATA_DIR + 'Logs/'
 CONFIG_FILE = os.path.expanduser('~/.radar_config')
 
@@ -319,6 +320,7 @@ class SampleAnalyser(threading.Thread):
 
         # Initialise variables
         self.noise_deque = deque(maxlen=8)
+        self.fmax3_deque = deque(maxlen=16)      # Deque for storing 3 frequencies with most signal
         self.median_noise = 10.0
         self.ave_noise = 10.0
 
@@ -340,6 +342,8 @@ class SampleAnalyser(threading.Thread):
 
         self.rmb_logger = RMBLogger()
         self.csv_logger = MonthlyCsvLogger()
+
+        self.captures_dir = DATA_DIR
 
 
     def run(self):
@@ -448,6 +452,13 @@ class SampleAnalyser(threading.Thread):
         samples_forspecgram = np.asarray(all_samples).flatten()
 
         print("Saving FFT")
+
+        # Change the capture directory to Captures/{date} if required
+        if capturetodated :
+            self.captures_dir = CAPTURES_DIR + obs_time.strftime('%Y%m%d') +'/'
+            os.makedirs(self.captures_dir, exist_ok=True)
+            pass
+
         # Set the FFT saving process off in one of 2 available subprocesses
         if self.save_process1 is None or not self.save_process1.is_alive() :
             self.save_process1 = Process(target=self.save_fft, args=(samples_forspecgram, self.sdr_freq, self.centre_freq, self.sdr_sample_rate, obs_time))
@@ -474,7 +485,7 @@ class SampleAnalyser(threading.Thread):
         x1 = scipy_signal.decimate(raw_samples, DECIMATION)
 
         # Save the decimated samples
-        sample_filename = DATA_DIR + '/SMP_' + str(int(centre_freq)) + obs_time.strftime('_%Y%m%d_%H%M%S_%f.npz')
+        sample_filename = self.captures_dir + '/SMP_' + str(int(centre_freq)) + obs_time.strftime('_%Y%m%d_%H%M%S_%f.npz')
         syslog.syslog(syslog.LOG_DEBUG, "Saving " + sample_filename)
         print("Saving", sample_filename)
         np.savez_compressed(sample_filename, samples=np.array(x1).astype("complex64"))
@@ -510,7 +521,7 @@ class SampleAnalyser(threading.Thread):
         # bins -= time_before_trigger
 
         # Save the data
-        specgram_filename = DATA_DIR + '/SPG_' + str(int(centre_freq)) + obs_time.strftime('_%Y%m%d_%H%M%S_%f.npz')
+        specgram_filename = self.captures_dir + '/SPG_' + str(int(centre_freq)) + obs_time.strftime('_%Y%m%d_%H%M%S_%f.npz')
         syslog.syslog(syslog.LOG_DEBUG, "Saving " + specgram_filename)
         print("Saving", specgram_filename)
         np.savez(specgram_filename, Pxx=Pxx, f=f, bins=bins)
@@ -534,7 +545,7 @@ class SampleAnalyser(threading.Thread):
 
         # Save to file as 16-bit signed single-channel audio samples
         # Note that we can throw away the imaginary part of the IQ sample data for USB
-        audio_filename = DATA_DIR + '/AUD_' + str(int(centre_freq)) + obs_time.strftime('_%Y%m%d_%H%M%S_%f.raw')
+        audio_filename = self.captures_dir + '/AUD_' + str(int(centre_freq)) + obs_time.strftime('_%Y%m%d_%H%M%S_%f.raw')
         syslog.syslog(syslog.LOG_DEBUG, "Saving " + audio_filename)
         print("Saving", audio_filename)
         x7.astype("int16").tofile(audio_filename)
@@ -578,7 +589,30 @@ class SampleAnalyser(threading.Thread):
         maxpos = np.argmax(np.max(x, axis=1))
         peak_freq = f[maxpos]
 
+        # self.find3f(x)
+
         psd_queue.put((mn, sigmedian, sigmax, peak_freq))
+
+
+    # Find 3 frequencies with most signal
+    def find3f(self, x) :
+        for i in range(0, x.shape[1]) :
+            # pmax = np.max(x[:,i])
+            fmax3 = x[:,i].argsort()[-3:][::-1]
+            if np.max(fmax3) == np.min(fmax3) + 2 :
+                self.fmax3_deque.append((i,np.sort(fmax3)))
+                if verbose: print(i, np.sort(fmax3))
+
+                # Have we had successive detections of 3f
+                if len(self.fmax3_deque) > 1 :
+                    diff_pos = abs(self.fmax3_deque[-1][0] - self.fmax3_deque[-2][0])
+                    if diff_pos == 1 or diff_pos == (x.shape[1]-1) :
+                        # print("2 successive")
+
+                    # Check last 2 in deque for an overlap in frequencies
+                        # print(self.fmax3_deque[-2], self.fmax3_deque[-1])
+                        if abs(self.fmax3_deque[-2][1][0] - self.fmax3_deque[-1][1][0]) < 3 :
+                            print("Overlap:", self.fmax3_deque[-2], self.fmax3_deque[-1])
 
 
 # Main sample streaming loop run async
@@ -627,6 +661,7 @@ if __name__ == "__main__":
     ap.add_argument("-r", "--raw", action='store_true', help="Store raw sample data")
     ap.add_argument("-n", "--noaudio", action='store_true', help="Disable saving of audio data")
     ap.add_argument("-d", "--decimate", action='store_true', help="Decimate data before saving")
+    ap.add_argument("-c", "--capturetodated", action='store_true', help="Store captures to data directory")
     ap.add_argument("-v", "--verbose", action='store_true', help="Verbose output")
     args = vars(ap.parse_args())
 
@@ -637,6 +672,7 @@ if __name__ == "__main__":
     save_raw_samples = args['raw']
     no_audio = args['noaudio']
     decimate_before_saving = args['decimate']
+    capturetodated = args['capturetodated']
     verbose = args['verbose']
 
     # Set up the logging
