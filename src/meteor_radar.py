@@ -661,7 +661,7 @@ if __name__ == "__main__":
     ap.add_argument("-r", "--raw", action='store_true', help="Store raw sample data")
     ap.add_argument("-n", "--noaudio", action='store_true', help="Disable saving of audio data")
     ap.add_argument("-d", "--decimate", action='store_true', help="Decimate data before saving")
-    ap.add_argument("-c", "--capturetodated", action='store_true', help="Store captures to data directory")
+    ap.add_argument("-c", "--capturetodated", action='store_true', help="Store captures to dated directory")
     ap.add_argument("-v", "--verbose", action='store_true', help="Verbose output")
     args = vars(ap.parse_args())
 
