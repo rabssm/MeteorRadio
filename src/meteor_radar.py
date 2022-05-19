@@ -18,6 +18,7 @@ from multiprocessing import Process
 
 DATA_DIR =  os.path.expanduser('~/radar_data/')
 CAPTURES_DIR = DATA_DIR + 'Captures/'
+ARCHIVE_DIR = DATA_DIR + 'Archive/'
 LOG_DIR = DATA_DIR + 'Logs/'
 CONFIG_FILE = os.path.expanduser('~/.radar_config')
 
@@ -62,6 +63,8 @@ def signalHandler (signum, frame) :
 # Create all necessary data directories for acquisition
 def make_directories() :
     os.makedirs(DATA_DIR, exist_ok=True)
+    os.makedirs(CAPTURES_DIR, exist_ok=True)
+    os.makedirs(ARCHIVE_DIR, exist_ok=True)
     os.makedirs(LOG_DIR, exist_ok=True)
 
 # Class for containing sample data and time of sample
