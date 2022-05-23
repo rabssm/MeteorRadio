@@ -111,11 +111,11 @@ if __name__ == "__main__":
     if footer_file_name is not None :
         try:
             footer_file = open(footer_file_name, 'r')
+            for line in footer_file :
+                file.write(line)
+            footer_file.close()
         except Exception as e : print(e)
-        for line in footer_file :
-            file.write(line)
 
-        footer_file.close()
 
     file.close()
 
