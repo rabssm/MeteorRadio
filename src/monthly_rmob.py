@@ -86,7 +86,7 @@ if __name__ == "__main__":
     
     for day in days :
         for hour in hours :
-            file.write("%02d%02d%02d%02d,%02d,%d\n" % (year, month, day, hour, hour, data_for_mesh[day-min(days),hour]))
+            file.write("%02d%02d%02d%02d,%02d,%d\n" % (year, month, day, hour, hour, data_for_mesh[day-days[0],hour]))
             # print("%02d%02d%02d%02d,%02d,%d" % (year, month, day, hour, hour, data_for_mesh[day-1,hour]))
     file.close()
 
@@ -104,7 +104,7 @@ if __name__ == "__main__":
     for day in days :
         out_line = " %02d|" %(day)
         for hour in hours :
-            out_line += " %-3d|" %(data_for_mesh[day-min(days),hour])
+            out_line += " %-3d|" %(data_for_mesh[day-days[0],hour])
         out_line += "\n"
         file.write(out_line)
 
