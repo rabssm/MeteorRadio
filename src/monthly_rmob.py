@@ -45,6 +45,7 @@ if __name__ == "__main__":
     print("Getting data for", year, month)
     list_of_files = sorted(glob.glob(LOG_DIR + 'R' + str(year) + '%02d' % month + '*.csv'))
     filenames = list_of_files
+    # print(filenames)
 
     frames = []
 
@@ -85,11 +86,11 @@ if __name__ == "__main__":
     
     for day in days :
         for hour in hours :
-            file.write("%02d%02d%02d%02d,%02d,%d\n" % (year, month, day, hour, hour, data_for_mesh[day-1,hour]))
+            file.write("%02d%02d%02d%02d,%02d,%d\n" % (year, month, day, hour, hour, data_for_mesh[day-min(days),hour]))
             # print("%02d%02d%02d%02d,%02d,%d" % (year, month, day, hour, hour, data_for_mesh[day-1,hour]))
     file.close()
 
-    # Ouptu in RMOB <observer_name>_052022rmob.TXT
+    # Output in RMOB <observer_name>_052022rmob.TXT
     filename = observer_name + "_" + filename_date.strftime("%m%Y") + "rmob.TXT"
     print("Writing to file:", LOG_DIR + filename)
     file = open(LOG_DIR + filename, 'w')
@@ -103,7 +104,7 @@ if __name__ == "__main__":
     for day in days :
         out_line = " %02d|" %(day)
         for hour in hours :
-            out_line += " %-3d|" %(data_for_mesh[day-1,hour])
+            out_line += " %-3d|" %(data_for_mesh[day-min(days),hour])
         out_line += "\n"
         file.write(out_line)
 
