@@ -78,6 +78,8 @@ if __name__ == "__main__":
     data_for_mesh = np.reshape(data_for_mesh, (len(days), len(hours)))
     # print(data_for_mesh)
 
+
+    ###############################################
     # Output in RMOB-YYMM.DAT 3 column format yyyymmddhh,hh,meteor-count
     filename_date = datetime.date(year,month,1)
     filename = "RMOB-" + filename_date.strftime("%y%m") + ".DAT"
@@ -90,6 +92,8 @@ if __name__ == "__main__":
             # print("%02d%02d%02d%02d,%02d,%d" % (year, month, day, hour, hour, data_for_mesh[day-1,hour]))
     file.close()
 
+
+    ###############################################
     # Output in RMOB <observer_name>_052022rmob.TXT
     filename = observer_name + "_" + filename_date.strftime("%m%Y") + "rmob.TXT"
     print("Writing to file:", LOG_DIR + filename)
@@ -101,10 +105,20 @@ if __name__ == "__main__":
     file.write(top_line + "\n")
 
     # Output the meteor counts
-    for day in days :
-        out_line = " %02d|" %(day)
+    for index in range(1,32) :
+        out_line = " %02d|" %(index)
         for hour in hours :
-            out_line += " %-3d|" %(data_for_mesh[day-days[0],hour])
+            # If no data before or after, set "???""
+            if index < days[0] : out_line += "??? |" 
+            elif datetime.datetime(year, month, index, hour) > datetime.datetime.now() : out_line += "??? |"
+
+            else:
+                try: 
+                    meteor_count = data_for_mesh[index-days[0], hour]
+                    out_line += " %-3d|" %(meteor_count)
+                except:
+                    out_line += "??? |"
+
         out_line += "\n"
         file.write(out_line)
 
@@ -119,4 +133,3 @@ if __name__ == "__main__":
 
 
     file.close()
-
