@@ -6,6 +6,7 @@ import numpy as np
 import datetime
 import os
 import glob
+from calendar import monthrange
 
 DATA_DIR =  os.path.expanduser('~/radar_data/')
 LOG_DIR = DATA_DIR + 'Logs/'
@@ -104,12 +105,17 @@ if __name__ == "__main__":
     for hour in hours: top_line += (" %02dh|" % (hour))
     file.write(top_line + "\n")
 
+    # Find missing days from missing log files
+    missing_days = set(range(1, monthrange(year, month)[1])) - set(days)
+    print("Missing days", missing_days)
+
     # Output the meteor counts
     for index in range(1,32) :
         out_line = " %02d|" %(index)
         for hour in hours :
             # If no data before or after, set "???""
-            if index < days[0] : out_line += "??? |" 
+            if index in missing_days : out_line += "??? |" 
+            # if index < days[0] : out_line += "??? |" 
             elif datetime.datetime(year, month, index, hour) > datetime.datetime.now() : out_line += "??? |"
 
             else:
