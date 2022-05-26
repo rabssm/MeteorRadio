@@ -243,8 +243,8 @@ class CaptureStatistics() :
 
         # Narrow the frequency band for the calculations
         self.centre_freq = centre_freq
-        self.noise_calculation_band = np.where((self.f*1e6 > (self.centre_freq + NOISE_CALCULATION_BAND[0])) & (self.f*1e6 <= (self.centre_freq + NOISE_CALCULATION_BAND[1])))
-        self.detection_band = np.where((self.f*1e6 > (self.centre_freq + DETECTION_FREQUENCY_BAND[0])) & (self.f*1e6 <= (self.centre_freq + DETECTION_FREQUENCY_BAND[1])))
+        self.noise_calculation_band = np.where((self.f*1e6 > (self.centre_freq + noise_calculation_band[0])) & (self.f*1e6 <= (self.centre_freq + noise_calculation_band[1])))
+        self.detection_band = np.where((self.f*1e6 > (self.centre_freq + detection_frequency_band[0])) & (self.f*1e6 <= (self.centre_freq + detection_frequency_band[1])))
         self.Pxx = self.Pxx[self.noise_calculation_band]
         self.f = self.f[self.noise_calculation_band]
 
@@ -376,8 +376,8 @@ class SampleAnalyser(threading.Thread):
         decimated_samples = scipy_signal.decimate(samples, DECIMATION)
         Pxx, f, bins = specgram(decimated_samples, NFFT=int(NUM_FFT/DECIMATION), Fs=self.decimated_sample_rate/1e6, noverlap=int(OVERLAP*(NUM_FFT/DECIMATION)))
         f += self.sdr_freq_mhz
-        self.noise_calculation_band = np.where((f*1e6 > (self.centre_freq + NOISE_CALCULATION_BAND[0])) & (f*1e6 <= (self.centre_freq + NOISE_CALCULATION_BAND[1])))
-        self.detection_band = np.where((f*1e6 > (self.centre_freq + DETECTION_FREQUENCY_BAND[0])) & (f*1e6 <= (self.centre_freq + DETECTION_FREQUENCY_BAND[1])))
+        self.noise_calculation_band = np.where((f*1e6 > (self.centre_freq + noise_calculation_band[0])) & (f*1e6 <= (self.centre_freq + noise_calculation_band[1])))
+        self.detection_band = np.where((f*1e6 > (self.centre_freq + detection_frequency_band[0])) & (f*1e6 <= (self.centre_freq + detection_frequency_band[1])))
         print("Sampling frequency band", f[0], f[-1])
         print("Noise calculation frequency band", f[self.noise_calculation_band])
         print("Detection frequency band", f[self.detection_band])
@@ -666,6 +666,8 @@ if __name__ == "__main__":
     ap.add_argument("-d", "--decimate", action='store_true', help="Decimate data before saving")
     ap.add_argument("-c", "--capturetodated", action='store_true', help="Store captures to dated directory")
     ap.add_argument("-v", "--verbose", action='store_true', help="Verbose output")
+    ap.add_argument("--detectionband", nargs=2, type=int, default=DETECTION_FREQUENCY_BAND, help="Frequency band for detection in Hz. Default is " + str(DETECTION_FREQUENCY_BAND) + " e.g. -120 120")
+    ap.add_argument("--noiseband", nargs=2, type=int, default=NOISE_CALCULATION_BAND, help="Frequency band for noise calculation in Hz. Default is " + str(NOISE_CALCULATION_BAND) + " e.g. -500 500")
     args = vars(ap.parse_args())
 
     centre_freq = args['frequency']
@@ -677,6 +679,8 @@ if __name__ == "__main__":
     decimate_before_saving = args['decimate']
     capturetodated = args['capturetodated']
     verbose = args['verbose']
+    detection_frequency_band = args['detectionband']
+    noise_calculation_band = args['noiseband']
 
     # Set up the logging
     # logging.basicConfig(filename=LOG_FILE, format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.INFO)
