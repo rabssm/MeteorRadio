@@ -155,8 +155,8 @@ class MeteorPlotter() :
                 audio_file = self.file_name.replace("SPG", "AUD")
                 audio_file = audio_file.replace("npz", "raw")
                 wav_file = audio_file.replace("raw", "wav")
-                os.system('play -r 35k -b 16 -e signed-integer -c 1 ' + audio_file + " sinc 1500-3000 &")
-                os.system('sox -r 35k -b 16 -e signed-integer -c 1 ' + audio_file + " " + wav_file + " &")
+                os.system('play -r 37.5k -b 16 -e signed-integer -c 1 ' + audio_file + " sinc 1500-3000 &")
+                os.system('sox -r 37.5k -b 16 -e signed-integer -c 1 ' + audio_file + " " + wav_file + " &")
             except:
                 pass
 
