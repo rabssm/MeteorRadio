@@ -147,6 +147,15 @@ To analyze the meteor detection FFT data in the .npz files in the output directo
 python analyse_detection.py ~/radar_data
 ```
 
+The raw sample audio files have a sample rate of 37.5k. They can be converted to .wav files using sox or played :
+```
+sox -r 37.5k -b 16 -e signed-integer -c 1 <audio_file.raw> <audio_file.wav>
+
+# Play a raw audio file applying a 1500-3000 Hz bandpass filter
+play -r 37.5k -b 16 -e signed-integer -c 1 <raw_audio_file> sinc 1500-3000
+```
+
+
 Below is an example of a meteor detection spectrogram as displayed by analyse_detection.py. In this example, the head echo can be clearly seen in the line moving across the plot from the right towards the centre. This line gives an indication of the radial velocity and deceleration of the meteor from the Doppler frequency shift.
 The later vertical component of the plot is the radio echo from the plasma trail. This echo from the plasma trail can also show Doppler frequency shifts due to high altitude winds.
 ![alt text](https://github.com/rabssm/MeteorRadio/blob/main/doc/sample.png)
