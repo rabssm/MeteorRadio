@@ -16,6 +16,7 @@ CONFIG_FILE = os.path.expanduser('~/.radar_config')
 if __name__ == "__main__":
 
     ap = argparse.ArgumentParser()
+    ap.add_argument("log_file_directory", type=str, nargs='?', default=LOG_DIR, help="Directory containing the log files")
     ap.add_argument("-m", "--month", type=int, default=datetime.datetime.now().month, help="Month of graph")
     ap.add_argument("-y", "--year", type=int, default=datetime.datetime.now().year, help="Year of graph")
     ap.add_argument("-o", "--observer", type=str, default="Observer", help="Observer's name")
@@ -23,6 +24,7 @@ if __name__ == "__main__":
 
     args = vars(ap.parse_args())
 
+    log_dir = args['log_file_directory']
     month = args['month']
     year = args['year']
     observer_name = args['observer']
@@ -43,8 +45,8 @@ if __name__ == "__main__":
     except Exception as e :
         print(e)
 
-    print("Getting data for", year, month)
-    list_of_files = sorted(glob.glob(LOG_DIR + 'R' + str(year) + '%02d' % month + '*.csv'))
+    print("Getting data for", year, month, "from", log_dir)
+    list_of_files = sorted(glob.glob(log_dir + 'R' + str(year) + '%02d' % month + '*.csv'))
     filenames = list_of_files
     # print(filenames)
 
@@ -84,8 +86,8 @@ if __name__ == "__main__":
     # Output in RMOB-YYMM.DAT 3 column format yyyymmddhh,hh,meteor-count
     filename_date = datetime.date(year,month,1)
     filename = "RMOB-" + filename_date.strftime("%y%m") + ".DAT"
-    print("Writing to file:", LOG_DIR + filename)
-    file = open(LOG_DIR + filename, 'w')
+    print("Writing to file:", log_dir + filename)
+    file = open(log_dir + filename, 'w')
     
     for day in days :
         for hour in hours :
@@ -97,8 +99,8 @@ if __name__ == "__main__":
     ###############################################
     # Output in RMOB <observer_name>_052022rmob.TXT
     filename = observer_name + "_" + filename_date.strftime("%m%Y") + "rmob.TXT"
-    print("Writing to file:", LOG_DIR + filename)
-    file = open(LOG_DIR + filename, 'w')
+    print("Writing to file:", log_dir + filename)
+    file = open(log_dir + filename, 'w')
 
     # Create the top line of the file
     top_line = filename_date.strftime("%b").lower() + "|"
@@ -113,9 +115,8 @@ if __name__ == "__main__":
     for index in range(1,32) :
         out_line = " %02d|" %(index)
         for hour in hours :
-            # If no data before or after, set "???""
-            if index in missing_days : out_line += "??? |" 
-            # if index < days[0] : out_line += "??? |" 
+            # If there are missing days, or no data on some days, set "???""
+            if index in missing_days or index > monthrange(year, month)[1] : out_line += "??? |"
             elif datetime.datetime(year, month, index, hour) > datetime.datetime.now() : out_line += "??? |"
 
             else:
