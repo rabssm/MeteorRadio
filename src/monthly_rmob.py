@@ -20,7 +20,8 @@ if __name__ == "__main__":
     ap.add_argument("-m", "--month", type=int, default=datetime.datetime.now().month, help="Month of graph")
     ap.add_argument("-y", "--year", type=int, default=datetime.datetime.now().year, help="Year of graph")
     ap.add_argument("-o", "--observer", type=str, default="Observer", help="Observer's name")
-    ap.add_argument("-f", "--footer", type=str, default=None, help="Footer file for appending to end of RMOB <observer_name>_052022rmob.TXT file")
+    ap.add_argument("-d", "--directory", type=str, default=LOG_DIR, help="Directory to output RMOB files. Default is " + LOG_DIR)
+    ap.add_argument("-f", "--footer", type=str, default=None, help="Footer file for appending to end of RMOB <observer_name>_mmyyyrmob.TXT file")
 
     args = vars(ap.parse_args())
 
@@ -28,6 +29,7 @@ if __name__ == "__main__":
     month = args['month']
     year = args['year']
     observer_name = args['observer']
+    output_dir = args['directory'] + '/'
     footer_file_name = args['footer']
 
     config_file_name = CONFIG_FILE
@@ -86,8 +88,8 @@ if __name__ == "__main__":
     # Output in RMOB-YYMM.DAT 3 column format yyyymmddhh,hh,meteor-count
     filename_date = datetime.date(year,month,1)
     filename = "RMOB-" + filename_date.strftime("%y%m") + ".DAT"
-    print("Writing to file:", log_dir + filename)
-    file = open(log_dir + filename, 'w')
+    print("Writing to file:", output_dir + filename)
+    file = open(output_dir + filename, 'w')
     
     for day in days :
         for hour in hours :
@@ -99,8 +101,8 @@ if __name__ == "__main__":
     ###############################################
     # Output in RMOB <observer_name>_052022rmob.TXT
     filename = observer_name + "_" + filename_date.strftime("%m%Y") + "rmob.TXT"
-    print("Writing to file:", log_dir + filename)
-    file = open(log_dir + filename, 'w')
+    print("Writing to file:", output_dir + filename)
+    file = open(output_dir + filename, 'w')
 
     # Create the top line of the file
     top_line = filename_date.strftime("%b").lower() + "|"
