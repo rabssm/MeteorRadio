@@ -93,8 +93,10 @@ if __name__ == "__main__":
     
     for day in days :
         for hour in hours :
-            file.write("%02d%02d%02d%02d,%02d,%d\n" % (year, month, day, hour, hour, data_for_mesh[day-days[0],hour]))
-            # print("%02d%02d%02d%02d,%02d,%d" % (year, month, day, hour, hour, data_for_mesh[day-1,hour]))
+            try: 
+                file.write("%02d%02d%02d%02d,%02d,%d\n" % (year, month, day, hour, hour, data_for_mesh[day-days[0],hour]))
+                # print("%02d%02d%02d%02d,%02d,%d" % (year, month, day, hour, hour, data_for_mesh[day-1,hour]))
+            except Exception : pass
     file.close()
 
 
@@ -106,7 +108,7 @@ if __name__ == "__main__":
 
     # Create the top line of the file
     top_line = filename_date.strftime("%b").lower() + "|"
-    for hour in hours: top_line += (" %02dh|" % (hour))
+    for hour in range(0, 24): top_line += (" %02dh|" % (hour))
     file.write(top_line + "\n")
 
     # Find missing days from missing log files
@@ -116,7 +118,7 @@ if __name__ == "__main__":
     # Output the meteor counts
     for index in range(1,32) :
         out_line = " %02d|" %(index)
-        for hour in hours :
+        for hour in range(0, 24) :
             # If there are missing days, or no data on some days, set "???""
             if index in missing_days or index > monthrange(year, month)[1] : out_line += "??? |"
             elif datetime.datetime(year, month, index, hour) > datetime.datetime.now() : out_line += "??? |"
