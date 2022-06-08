@@ -14,7 +14,8 @@ import syslog
 import threading
 import signal
 import argparse
-from multiprocessing import Process
+from multiprocessing import Process, Queue as mpQueue
+from waterfall import Waterfall
 
 DATA_DIR =  os.path.expanduser('~/radar_data/')
 CAPTURES_DIR = DATA_DIR + 'Captures/'
@@ -578,7 +579,14 @@ class SampleAnalyser(threading.Thread):
         # Do the PSD
         decimated_samples = scipy_signal.decimate(samples, DECIMATION)
         Pxx, f, bins = specgram(decimated_samples, NFFT=int(NUM_FFT/DECIMATION), Fs=self.decimated_sample_rate/1e6, noverlap=int(OVERLAP*(NUM_FFT/DECIMATION)))
+
         f += self.sdr_freq_mhz
+
+        # Add this to add processed specgram to waterfall queue for waterfall display
+        # try:
+        #     waterfall_queue.put_nowait((Pxx, f))
+        # except: pass
+
         f = f[self.detection_band]
 
         # Calculate the mean and median (noise) level over the larger noise calculation band
@@ -639,6 +647,11 @@ async def streaming():
         # Add the sample data to the queue for the sample analyser
         sample_queue.put(samples)
 
+        # Add the sample data to the waterfall queue for the waterfall display
+        try:
+            waterfall_queue.put_nowait(samples)
+        except: pass
+
     # to stop streaming:
     await sdr.stop()
 
@@ -665,6 +678,7 @@ if __name__ == "__main__":
     ap.add_argument("-n", "--noaudio", action='store_true', help="Disable saving of audio data")
     ap.add_argument("-d", "--decimate", action='store_true', help="Decimate data before saving")
     ap.add_argument("-c", "--capturetodated", action='store_true', help="Store captures to dated directory")
+    ap.add_argument("-w", "--waterfall", action='store_true', help="Display waterfall graph")
     ap.add_argument("-v", "--verbose", action='store_true', help="Verbose output")
     ap.add_argument("--detectionband", nargs=2, type=int, default=DETECTION_FREQUENCY_BAND, help="Frequency band for detection in Hz. Default is " + str(DETECTION_FREQUENCY_BAND) + " e.g. -120 120")
     ap.add_argument("--noiseband", nargs=2, type=int, default=NOISE_CALCULATION_BAND, help="Frequency band for noise calculation in Hz. Default is " + str(NOISE_CALCULATION_BAND) + " e.g. -500 500")
@@ -678,6 +692,7 @@ if __name__ == "__main__":
     no_audio = args['noaudio']
     decimate_before_saving = args['decimate']
     capturetodated = args['capturetodated']
+    display_waterfall = args['waterfall']
     verbose = args['verbose']
     detection_frequency_band = args['detectionband']
     noise_calculation_band = args['noiseband']
@@ -697,12 +712,20 @@ if __name__ == "__main__":
     # Create the queue for the samples for analysis
     sample_queue = Queue(maxsize=10)
 
+    # Create the queue for the waterfall display
+    waterfall_queue = mpQueue(maxsize=1)
+
     # Create the SDR instance
     sdr = RtlSdr()
 
     # Start the sample analyser
     sample_analyser = SampleAnalyser(centre_freq)
     sample_analyser.start()
+
+    # Start the waterfall display
+    if  display_waterfall :
+        p = Waterfall(centre_freq + FREQUENCY_OFFSET, SAMPLE_RATE, waterfall_queue)
+        p.start()
 
     # Start the sample collection
     loop = asyncio.get_event_loop()
