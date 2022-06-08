@@ -649,6 +649,7 @@ async def streaming():
 
         # Add the sample data to the waterfall queue for the waterfall display
         try:
+            if waterfall_queue.full() : waterfall_queue.get_nowait()
             waterfall_queue.put_nowait(samples)
         except: pass
 
