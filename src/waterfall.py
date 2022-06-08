@@ -56,7 +56,6 @@ class Waterfall(Process):
         self.init_plot()
 
     def run(self):
-        print("Running")
         self.start_p()
 
 
@@ -108,7 +107,6 @@ class Waterfall(Process):
         return self.image,
 
     def start_p(self):
-        print("starting")
         self.update_plot_labels()
         blit = True
         ani = animation.FuncAnimation(self.fig, self.update, interval=50,
