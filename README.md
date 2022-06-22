@@ -7,7 +7,7 @@ This guide assumes basic knowledge of electronics, the Unix environment, and som
 ### Hardware
 
 #### Software Radio
-A Realtek Semiconductor Corp. RTL2832U DVB-T.  The USB dongle is plugged into a Raspberry Pi 3/4 (1-2GB memory) running Raspbian Linux.
+A Realtek Semiconductor Corp. RTL2832U DVB-T.  The USB dongle is plugged into a Raspberry Pi 3/4 (1-2GB memory) running Raspbian Linux. To check that your USB dongle will work, see the section below regarding the 'rtl_test' command.
 
 #### Antenna
 Recommended HB9-2 HB9CV 2 ELEMENT ANTENNA for the GRAVES frequency 143.05 MHz.
@@ -53,6 +53,16 @@ SPG_143050000_20220206_132454_941629.npz
 
 Audio and FFT detection files are about 800 kB in size.
 
+##### Raw Observation Data
+Raw observation can be acquired instead using the -r option. This produces files containing the raw I/Q sample data from the SDR in the form of a numpy npz file with the name format:
+
+SMP_FFFFFFFFF_YYYYMMDD_HHMMSS_%%%%%%.npz
+e.g.
+SMP_143050000_20220622_152435_196974.npz
+
+These raw observation detection files are about 3.1 MB in size. They contain all of the information required for a detailed analysis for example for high resolution head echo analysis.
+
+
 #### Radio Tuning
 The software tunes the USB software radio to a central frequency 2 kHz below the required frequency. This is so that a meteor detection yields an approximately 2 kHz audible tone on the upper sideband. The default frequency for radio meteor detection is the frequency of the GRAVES transmitter 143.05 MHz. The required frequency can be changed using the -f option.
 
@@ -64,7 +74,7 @@ It is recommended that when running using a Pi3b, the --decimate option is used,
 Note. It may be necessary to experiment with the -s 'SNR' option to determine the optimum SNR detection threshold for the specific antenna/receiving equipment. The default SNR is set to 45 (~16dB). If there are too many false positives, then the SNR threshold should be increased.
 
 ### Analysis Software
-The analyse_detection.py matplotlib tool can be used to visualise and analyse the resultant detection npz files. This tool imports matplotlib and scipy.
+The analyse_detection.py matplotlib tool can be used to visualise and analyse the resultant detection SPC or SMP npz files. This tool imports matplotlib and scipy.
 
 ### Additional Software Modules
 The software uses the pyrtlsdr package for reading the USB data from the RTL SDR dongle. It also needs python-matplotlib and numpy for the FFT routines. The following external modules are required to run the software.
@@ -73,6 +83,11 @@ These can be installed with the commands:
 sudo apt update
 sudo apt install -y rtl-sdr python-numpy python-setuptools python-pip libusb-dev python-matplotlib libatlas-base-dev
 pip install pyrtlsdr scipy
+```
+
+To ensure that the RTL SDR dongle will work on your system, run the rtl_test program. Check that this detects your device and runs correctly.
+```
+rtl_test
 ```
 
 The pandas package is needed to create the monthly detection counts graphs:
