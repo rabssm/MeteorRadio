@@ -25,6 +25,7 @@ JUNK_DIR =  os.path.expanduser('~/radar_data/Junk')
 OVERLAP = 0.75           # Overlap (0.75 is 75%)
 
 NUM_FFT = 2**16
+DEFAULT_SAMPLE_RATE = 37500
 
 HELP_TEXT = 'Command keys:\n' + \
     'Right arrow    next file\n' + \
@@ -151,14 +152,33 @@ class MeteorPlotter() :
 
         # 0 key plays the audio file and converts to a wav file to allow analysis using audacity
         elif event.key == '0':
-            try:
-                audio_file = self.file_name.replace("SPG", "AUD")
-                audio_file = audio_file.replace("npz", "raw")
-                wav_file = audio_file.replace("raw", "wav")
-                os.system('play -r 37.5k -b 16 -e signed-integer -c 1 ' + audio_file + " sinc 1500-3000 &")
-                os.system('sox -r 37.5k -b 16 -e signed-integer -c 1 ' + audio_file + " " + wav_file + " &")
-            except:
-                pass
+            # If the file is a raw sample file
+            if 'SMP' in self.file_name and 'npz' in self.file_name :
+                # Scale samples to adjust volume
+                x7 = samples * (10000 / np.max(np.abs(samples)))
+
+                # Save to file as 16-bit signed single-channel audio samples
+                # Note that we can throw away the imaginary part of the IQ sample data for USB
+                audio_filename = self.file_name.replace("SMP", "AUD")
+                audio_filename = audio_filename.replace("npz", "raw")
+                wav_filename = audio_filename.replace("raw", "wav")
+                print("Saving", audio_filename)
+                x7.astype("int16").tofile(audio_filename)
+
+                try :
+                    os.system('play -r 37.5k -b 16 -e signed-integer -c 1 ' + audio_filename + " sinc 1500-3000 &")
+                    os.system('sox -r 37.5k -b 16 -e signed-integer -c 1 ' + audio_filename + " " + wav_filename + " &")
+                except: pass
+
+            else:
+                try:
+                    audio_file = self.file_name.replace("SPG", "AUD")
+                    audio_file = audio_file.replace("npz", "raw")
+                    wav_file = audio_file.replace("raw", "wav")
+                    os.system('play -r 37.5k -b 16 -e signed-integer -c 1 ' + audio_file + " sinc 1500-3000 &")
+                    os.system('sox -r 37.5k -b 16 -e signed-integer -c 1 ' + audio_file + " " + wav_file + " &")
+                except:
+                    pass
 
         elif event.key == '+' :
             self.cmap_index += 1
@@ -512,11 +532,19 @@ if __name__ == "__main__":
                 meteor_plotter.plot_specgram(Pxx, f, bins, centre_freq, obs_time, flipped=False)
                 # if show_3d : plot_3dspecgram(Pxx, f, bins, centre_freq)
 
-            # If this is raw sample data, create the spec data and display it
+            # If this is raw sample data, create the spectrogram display data and display it
             if 'SMP' in filename and 'npz' in filename :
                 npz_data = np.load(filename)
                 samples = npz_data['samples']
-                Pxx, f, bins = specgram(samples, NFFT=2**12, Fs=37500, noverlap=OVERLAP*(2**12))
+                sample_rate = DEFAULT_SAMPLE_RATE
+                try:
+                    centre_freq = npz_data['centre_freq']
+                    sample_rate = npz_data['sample_rate']
+                    obs_time = datetime.datetime.strptime(str(npz_data['obs_time']), "%Y-%m-%d %H:%M:%S.%f")
+                except Exception as e :
+                    print(e)
+
+                Pxx, f, bins = specgram(samples, NFFT=2**12, Fs=DEFAULT_SAMPLE_RATE, noverlap=OVERLAP*(2**12))
                 freq_slice = np.where((f > 1500) & (f <= 2500))
                 f = f[freq_slice]
                 f += centre_freq - 2000

@@ -43,8 +43,8 @@ DECIMATION = 8             # Reduce audio sample rate from 300k to 37.5k
 FREQUENCY_OFFSET = -2000   # Tuning frequency offset from centre (so signal appears as 2kHz audio on upper sideband)
 DETECTION_FREQUENCY_BAND = [-120,+120]    # Band for detection is +/- F Hz
 NOISE_CALCULATION_BAND = [-500,+500]    # Band for noise calculation is +/- F Hz
-OVERLAP = 0.75             # Overlap for detection trigger (0.75 is 75% - this keeps one core of the Pi4 at 60% load)
-COMPRESSION_OVERLAP = 0.75          # Overlap for saved FFT data (0.75 is 75%)
+OVERLAP = 0.75             # Overlap for saved FFT data (0.75 is 75%)
+ANALYSIS_OVERLAP = 0.5     # Overlap for detection analysis
 COMPRESSION_FREQUENCY_BAND = 1000   # Band for compression data saving is +/- 1000 Hz
 AUDIO_FREQUENCY_BANDPASS = [1500, 3000]   # Bandpass filter for audio around 2 kHz
 NUM_FFT = 2**15
@@ -374,14 +374,17 @@ class SampleAnalyser(threading.Thread):
         print("SDR gain:", sdr.gain)
 
         # Do a first PSD to get frequency bands
-        decimated_samples = scipy_signal.decimate(samples, DECIMATION)
-        Pxx, f, bins = specgram(decimated_samples, NFFT=int(NUM_FFT/DECIMATION), Fs=self.decimated_sample_rate/1e6, noverlap=int(OVERLAP*(NUM_FFT/DECIMATION)))
+        # decimated_samples = scipy_signal.decimate(samples, DECIMATION)
+        # Pxx, f, bins = specgram(decimated_samples, NFFT=int(NUM_FFT/DECIMATION), Fs=self.decimated_sample_rate/1e6, noverlap=int(OVERLAP*(NUM_FFT/DECIMATION)))
+        Pxx, f, bins = specgram(samples, NFFT=int(NUM_FFT/DECIMATION), Fs=self.sdr_sample_rate/1e6, noverlap=int(ANALYSIS_OVERLAP*NUM_FFT/DECIMATION))
+
         f += self.sdr_freq_mhz
         self.noise_calculation_band = np.where((f*1e6 > (self.centre_freq + noise_calculation_band[0])) & (f*1e6 <= (self.centre_freq + noise_calculation_band[1])))
         self.detection_band = np.where((f*1e6 > (self.centre_freq + detection_frequency_band[0])) & (f*1e6 <= (self.centre_freq + detection_frequency_band[1])))
         print("Sampling frequency band", f[0], f[-1])
         print("Noise calculation frequency band", f[self.noise_calculation_band])
         print("Detection frequency band", f[self.detection_band])
+        print("Spectrogram shape for detection", Pxx.shape)
 
 
         # Get samples from the queue as they arrive, analyse them and check for a detection trigger
@@ -455,7 +458,7 @@ class SampleAnalyser(threading.Thread):
 
         samples_forspecgram = np.asarray(all_samples).flatten()
 
-        print("Saving FFT")
+        print("Saving sample data")
 
         # Change the capture directory to Captures/{date} if required
         if capturetodated :
@@ -463,36 +466,57 @@ class SampleAnalyser(threading.Thread):
             os.makedirs(self.captures_dir, exist_ok=True)
             pass
 
-        # Set the FFT saving process off in one of 2 available subprocesses
-        if self.save_process1 is None or not self.save_process1.is_alive() :
-            self.save_process1 = Process(target=self.save_fft, args=(samples_forspecgram, self.sdr_freq, self.centre_freq, self.sdr_sample_rate, obs_time))
-            self.save_process1.start()
-        elif self.save_process2 is None or not self.save_process2.is_alive() :
-            self.save_process2 = Process(target=self.save_fft, args=(samples_forspecgram, self.sdr_freq, self.centre_freq, self.sdr_sample_rate, obs_time))
-            self.save_process2.start()
-
-        if not self.no_audio :
-            print("Saving audio")
-            self.audio_process = Process(target=self.save_audio, args=(samples_forspecgram, self.sdr_freq, self.centre_freq, self.sdr_sample_rate, obs_time))
-            self.audio_process.start()
-
+        # If set for raw samples, only save the raw sample data
         if self.save_raw_samples :
-            print("Saving raw sample data")
-            self.raw_samples_process = Process(target=self.save_raw_sample_data, args=(samples_forspecgram, self.sdr_freq, self.centre_freq, self.sdr_sample_rate, obs_time))
-            self.raw_samples_process.start()
+            # Set the raw sample saving process off in one of 2 available subprocesses
+            if self.save_process1 is None or not self.save_process1.is_alive() :
+                self.save_process1 = Process(target=self.save_raw_sample_data, args=(samples_forspecgram, self.sdr_freq, self.centre_freq, self.sdr_sample_rate, obs_time))
+                self.save_process1.start()
+            elif self.save_process2 is None or not self.save_process2.is_alive() :
+                self.save_process2 = Process(target=self.save_raw_sample_data, args=(samples_forspecgram, self.sdr_freq, self.centre_freq, self.sdr_sample_rate, obs_time))
+                self.save_process2.start()
+
+
+        # Otherwise, save FFT spectrogram and raw audio
+        else:
+            # Set the FFT saving process off in one of 2 available subprocesses
+            if self.save_process1 is None or not self.save_process1.is_alive() :
+                self.save_process1 = Process(target=self.save_fft, args=(samples_forspecgram, self.sdr_freq, self.centre_freq, self.sdr_sample_rate, obs_time))
+                self.save_process1.start()
+            elif self.save_process2 is None or not self.save_process2.is_alive() :
+                self.save_process2 = Process(target=self.save_fft, args=(samples_forspecgram, self.sdr_freq, self.centre_freq, self.sdr_sample_rate, obs_time))
+                self.save_process2.start()
+
+            if not self.no_audio :
+                print("Saving audio")
+                self.audio_process = Process(target=self.save_audio, args=(samples_forspecgram, self.sdr_freq, self.centre_freq, self.sdr_sample_rate, obs_time))
+                self.audio_process.start()
 
 
     # Function to save the raw sample data as an SMP file
     def save_raw_sample_data(self, raw_samples, sda_centre_freq, centre_freq, sample_rate, obs_time) :
 
         # Decimate to reduce sample rate from 300 kHz to 37.5 kHz
-        x1 = scipy_signal.decimate(raw_samples, DECIMATION)
+        decimated_samples = scipy_signal.decimate(raw_samples, DECIMATION)
 
-        # Save the decimated samples
+        # Save the decimated raw samples
         sample_filename = self.captures_dir + '/SMP_' + str(int(centre_freq)) + obs_time.strftime('_%Y%m%d_%H%M%S_%f.npz')
         syslog.syslog(syslog.LOG_DEBUG, "Saving " + sample_filename)
         print("Saving", sample_filename)
-        np.savez_compressed(sample_filename, samples=np.array(x1).astype("complex64"))
+        np.savez(sample_filename, obs_time=str(obs_time), centre_freq=centre_freq, sample_rate=self.decimated_sample_rate, samples=np.array(decimated_samples).astype("complex64"))
+
+        # Log the data
+        Pxx, f, bins = specgram(decimated_samples, NFFT=int(NUM_FFT/DECIMATION), Fs=self.decimated_sample_rate/1e6, noverlap=int(OVERLAP*(NUM_FFT/DECIMATION)))
+        f += sda_centre_freq/1e6
+
+        # Restrict the band for saving to a band around the required centre frequency
+        freq_slice = np.where((f >= (centre_freq-COMPRESSION_FREQUENCY_BAND)/1e6) & (f <= (centre_freq+COMPRESSION_FREQUENCY_BAND)/1e6))
+        f = f[freq_slice]
+        Pxx = Pxx[freq_slice,:][0]
+        bins /= 1e6      # Convert bins data to time in seconds
+
+        # Log the capture stats
+        self.log_capture_stats(Pxx, f, bins, obs_time)
 
 
 
@@ -507,12 +531,11 @@ class SampleAnalyser(threading.Thread):
             decimated_samples = scipy_signal.decimate(samples_forspecgram, DECIMATION)
             Pxx, f, bins = specgram(decimated_samples, NFFT=int(NUM_FFT/DECIMATION), Fs=self.decimated_sample_rate/1e6, noverlap=int(OVERLAP*(NUM_FFT/DECIMATION)))
         else:
-            Pxx, f, bins = specgram(samples_forspecgram, NFFT=NUM_FFT, Fs=sample_rate/1e6, noverlap=COMPRESSION_OVERLAP*NUM_FFT)
+            Pxx, f, bins = specgram(samples_forspecgram, NFFT=NUM_FFT, Fs=sample_rate/1e6, noverlap=OVERLAP*NUM_FFT)
 
         f += sda_centre_freq/1e6
 
         # Restrict the band for saving to a band around the required centre frequency
-        detection_band = np.where((f*1e6 > (centre_freq - COMPRESSION_FREQUENCY_BAND)) & (f*1e6 <= (centre_freq + COMPRESSION_FREQUENCY_BAND)))
         freq_slice = np.where((f >= (centre_freq-COMPRESSION_FREQUENCY_BAND)/1e6) & (f <= (centre_freq+COMPRESSION_FREQUENCY_BAND)/1e6))
         f = f[freq_slice]
         Pxx = Pxx[freq_slice,:][0]
@@ -577,8 +600,10 @@ class SampleAnalyser(threading.Thread):
     # Perform a PSD analysis on the raw samples data
     def analyse_psd(self, samples, psd_queue) :
         # Do the PSD
-        decimated_samples = scipy_signal.decimate(samples, DECIMATION)
-        Pxx, f, bins = specgram(decimated_samples, NFFT=int(NUM_FFT/DECIMATION), Fs=self.decimated_sample_rate/1e6, noverlap=int(OVERLAP*(NUM_FFT/DECIMATION)))
+        # NOTE: Decimation before taking the specgram is slower than doing the specgram on the raw sample data
+        # decimated_samples = scipy_signal.decimate(samples, DECIMATION)
+        # Pxx, f, bins = specgram(decimated_samples, NFFT=int(NUM_FFT/DECIMATION), Fs=self.decimated_sample_rate/1e6, noverlap=int(OVERLAP*(NUM_FFT/DECIMATION)))
+        Pxx, f, bins = specgram(samples, NFFT=int(NUM_FFT/DECIMATION), Fs=self.sdr_sample_rate/1e6, noverlap=int(ANALYSIS_OVERLAP*NUM_FFT/DECIMATION))
 
         f += self.sdr_freq_mhz
 
