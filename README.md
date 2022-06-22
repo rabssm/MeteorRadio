@@ -54,13 +54,13 @@ SPG_143050000_20220206_132454_941629.npz
 Audio and FFT detection files are about 800 kB in size.
 
 ##### Raw Observation Data
-Raw observation can be acquired instead using the -r option. This produces files containing the raw I/Q sample data from the SDR in the form of a numpy npz file with the name format:
+Raw observation data can be acquired instead using the -r option. This produces files containing the raw I/Q sample data from the SDR in the form of a numpy npz file with the name format:
 
 SMP_FFFFFFFFF_YYYYMMDD_HHMMSS_%%%%%%.npz
 e.g.
 SMP_143050000_20220622_152435_196974.npz
 
-These raw observation detection files are about 3.1 MB in size. They contain all of the information required for a detailed analysis for example for high resolution head echo analysis.
+These raw observation detection files are about 3.1 MB in size. They contain all of the information required for a detailed analysis of the meteor detection for example for high resolution head echo analysis.
 
 
 #### Radio Tuning
