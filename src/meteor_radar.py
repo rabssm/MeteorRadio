@@ -376,7 +376,7 @@ class SampleAnalyser(threading.Thread):
         # Do a first PSD to get frequency bands
         # decimated_samples = scipy_signal.decimate(samples, DECIMATION)
         # Pxx, f, bins = specgram(decimated_samples, NFFT=int(NUM_FFT/DECIMATION), Fs=self.decimated_sample_rate/1e6, noverlap=int(OVERLAP*(NUM_FFT/DECIMATION)))
-        Pxx, f, bins = specgram(samples, NFFT=int(NUM_FFT/DECIMATION), Fs=self.sdr_sample_rate/1e6, noverlap=int(ANALYSIS_OVERLAP*NUM_FFT/DECIMATION))
+        Pxx, f, bins = specgram(samples, NFFT=int(NUM_FFT), Fs=self.sdr_sample_rate/1e6, noverlap=int(ANALYSIS_OVERLAP*NUM_FFT))
 
         f += self.sdr_freq_mhz
         self.noise_calculation_band = np.where((f*1e6 > (self.centre_freq + noise_calculation_band[0])) & (f*1e6 <= (self.centre_freq + noise_calculation_band[1])))
@@ -603,7 +603,7 @@ class SampleAnalyser(threading.Thread):
         # NOTE: Decimation before taking the specgram is slower than doing the specgram on the raw sample data
         # decimated_samples = scipy_signal.decimate(samples, DECIMATION)
         # Pxx, f, bins = specgram(decimated_samples, NFFT=int(NUM_FFT/DECIMATION), Fs=self.decimated_sample_rate/1e6, noverlap=int(OVERLAP*(NUM_FFT/DECIMATION)))
-        Pxx, f, bins = specgram(samples, NFFT=int(NUM_FFT/DECIMATION), Fs=self.sdr_sample_rate/1e6, noverlap=int(ANALYSIS_OVERLAP*NUM_FFT/DECIMATION))
+        Pxx, f, bins = specgram(samples, NFFT=int(NUM_FFT), Fs=self.sdr_sample_rate/1e6, noverlap=int(ANALYSIS_OVERLAP*NUM_FFT))
 
         f += self.sdr_freq_mhz
 
@@ -625,13 +625,19 @@ class SampleAnalyser(threading.Thread):
         maxpos = np.argmax(np.max(x, axis=1))
         peak_freq = f[maxpos]
 
-        # self.find3f(x)
+        self.find3f(x)
 
         psd_queue.put((mn, sigmedian, sigmax, peak_freq))
 
 
     # Find 3 frequencies with most signal
     def find3f(self, x) :
+        fmax3 = np.argpartition(x, -3, axis=1)[:, -3:]
+        if np.max(fmax3) == np.min(fmax3) + 2 :
+            if verbose: print("Max 3 f triggered", fmax3)
+            syslog.syslog(syslog.LOG_DEBUG, "Max 3 f triggered " + str(fmax3))
+        return
+
         for i in range(0, x.shape[1]) :
             # pmax = np.max(x[:,i])
             fmax3 = x[:,i].argsort()[-3:][::-1]
@@ -699,11 +705,10 @@ if __name__ == "__main__":
     ap.add_argument("-f", "--frequency", type=float, default=143.05e6, help="Centre frequency. Default is GRAVES (143.05 MHz)")
     ap.add_argument("-g", "--gain", type=str, default=str(SDR_GAIN), help="SDR tuner gain (0-50, auto). Default is 50")
     ap.add_argument("-s", "--snr_threshold", type=float, default=45, help="SNR threshold. Default is 45 (~16 dB)")
-    ap.add_argument("-l", "--limit_save_threshold", type=float, default=0, help="Threshold for limiting saving of detailed data. Default is 0 (disabled)")
     ap.add_argument("-r", "--raw", action='store_true', help="Store raw sample data")
     ap.add_argument("-n", "--noaudio", action='store_true', help="Disable saving of audio data")
-    ap.add_argument("-d", "--decimate", action='store_true', help="Decimate data before saving")
-    ap.add_argument("-c", "--capturetodated", action='store_true', help="Store captures to dated directory")
+    ap.add_argument("-d", "--decimate", action='store_true', help="Decimate data for spectrogram before saving")
+    ap.add_argument("-c", "--capturetodated", action='store_true', help="Store captures to dated directories e.g. ~/radar_data/Archive/20220621")
     ap.add_argument("-w", "--waterfall", action='store_true', help="Display waterfall graph")
     ap.add_argument("-v", "--verbose", action='store_true', help="Verbose output")
     ap.add_argument("--detectionband", nargs=2, type=int, default=DETECTION_FREQUENCY_BAND, help="Frequency band for detection in Hz. Default is " + str(DETECTION_FREQUENCY_BAND) + " e.g. -120 120")
@@ -713,7 +718,6 @@ if __name__ == "__main__":
     centre_freq = args['frequency']
     sdr_gain = args['gain']
     snr_threshold = args['snr_threshold']
-    data_saving_threshold = args['limit_save_threshold']
     save_raw_samples = args['raw']
     no_audio = args['noaudio']
     decimate_before_saving = args['decimate']
@@ -754,5 +758,4 @@ if __name__ == "__main__":
         p.start()
 
     # Start the sample collection
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(streaming())
+    asyncio.run(streaming())
