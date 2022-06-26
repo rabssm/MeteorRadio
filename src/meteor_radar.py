@@ -625,7 +625,7 @@ class SampleAnalyser(threading.Thread):
         maxpos = np.argmax(np.max(x, axis=1))
         peak_freq = f[maxpos]
 
-        self.find3f(x)
+        # self.find3f(x)
 
         psd_queue.put((mn, sigmedian, sigmax, peak_freq))
 
