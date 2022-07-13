@@ -16,13 +16,12 @@
 
 
 from __future__ import division
-import asyncio
 from multiprocessing import Queue, Process
+import os
 import matplotlib.animation as animation
 from matplotlib.mlab import psd, specgram
-import pylab as pyl
+import matplotlib.pyplot as plt
 import numpy as np
-import sys
 from rtlsdr import RtlSdr
 import threading
 import time
@@ -33,7 +32,7 @@ NFFT = 1024*4
 NUM_SAMPLES_PER_SCAN = 131072 # NFFT*16
 NUM_BUFFERED_SWEEPS = 100
 
-SAMPLE_RATE = 300000       #    960000 (262144-causes noise near 143.05) 262144, 240000
+SAMPLE_RATE = 300000
 
 
 # change this to control the number of scans that are combined in a single sweep
@@ -51,11 +50,12 @@ class Waterfall(Process):
         self.fc = fc
         self.rs = rs
         self.sample_queue = waterfall_queue
-        self.fig = fig if fig else pyl.figure()
+        self.fig = fig if fig else plt.figure()
 
         self.init_plot()
 
     def run(self):
+        os.nice(10)
         self.start_p()
 
 
@@ -112,7 +112,7 @@ class Waterfall(Process):
         ani = animation.FuncAnimation(self.fig, self.update, interval=50,
                 blit=blit)
 
-        pyl.show()
+        plt.show()
 
         return
 
