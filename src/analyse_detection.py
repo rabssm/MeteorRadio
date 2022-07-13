@@ -15,7 +15,7 @@ import glob
 from queue import LifoQueue
 
 
-FULL_FREQUENCY_BAND = 1000   # Band for psd plot is +/- 1000 Hz
+FULL_FREQUENCY_BAND = 18000   # Band for psd plot is +/- 18000 Hz
 SPECGRAM_BAND = 500     # Band for displaying specgram plots is +/-500
 DATA_DIR =  os.path.expanduser('~/radar_data')
 ARCHIVE_DIR =  os.path.expanduser('~/radar_data/Archive')
@@ -141,6 +141,12 @@ class MeteorPlotter() :
             plt.close()
         elif event.key == 'left':
             file_index_movement = -1
+            plt.close()
+        elif event.key == 'pagedown':
+            file_index_movement = 10
+            plt.close()
+        elif event.key == 'pageup':
+            file_index_movement = -10
             plt.close()
         elif event.key == 'S' :                 # S key saves current plot to image
             try:
@@ -545,11 +551,8 @@ if __name__ == "__main__":
                     print(e)
 
                 Pxx, f, bins = specgram(samples, NFFT=2**12, Fs=DEFAULT_SAMPLE_RATE, noverlap=OVERLAP*(2**12))
-                freq_slice = np.where((f > 1500) & (f <= 2500))
-                f = f[freq_slice]
                 f += centre_freq - 2000
                 f /= 1e6
-                Pxx = Pxx[freq_slice,:][0]
 
                 meteor_plotter.plot_specgram(Pxx, f, bins, centre_freq, obs_time, flipped=False)
 
