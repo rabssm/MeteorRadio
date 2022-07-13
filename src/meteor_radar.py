@@ -331,6 +331,8 @@ class SampleAnalyser(threading.Thread):
         self.trigger_count = 0
         self.trigger_wait_counter = 0
 
+        self.fmax3_count = 0
+
         self.analysis_thread = None
         self.save_process1 = None
         self.save_process2 = None
@@ -633,9 +635,13 @@ class SampleAnalyser(threading.Thread):
     # Find 3 frequencies with most signal
     def find3f(self, x) :
         fmax3 = np.argpartition(x, -3, axis=1)[:, -3:]
-        if np.max(fmax3) == np.min(fmax3) + 2 :
-            if verbose: print("Max 3 f triggered", fmax3)
-            syslog.syslog(syslog.LOG_DEBUG, "Max 3 f triggered " + str(fmax3))
+        for fmax3_item in fmax3 :
+            if np.max(fmax3_item) == np.min(fmax3_item) + 2 :
+                self.fmax3_count += 1
+                if self.fmax3_count > 3 :
+                    if verbose:
+                        print("Max 3 f triggered", fmax3_item)
+            else: self.fmax3_count = 0
         return
 
         for i in range(0, x.shape[1]) :
