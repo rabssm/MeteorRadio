@@ -355,7 +355,7 @@ class SampleAnalyser(threading.Thread):
     def run(self):
         global sdr
 
-        psd_queue = Queue(maxsize=10)
+        psd_queue = mpQueue(maxsize=4)
 
         # Get the first set of samples
         samples = sample_queue.get()
@@ -391,20 +391,19 @@ class SampleAnalyser(threading.Thread):
 
         # Get samples from the queue as they arrive, analyse them and check for a detection trigger
         while True :
+            # print("Queue lengths", sample_queue.qsize(), psd_queue.qsize())
             samples = sample_queue.get()
 
-            if self.analysis_thread is not None and self.analysis_thread.is_alive() : continue
-
             # Do the PSD analysis in a thread. If the queue is full then we must skip to the next set of samples
-            if psd_queue.full() : continue
-            # self.analyse_psd(samples, fcentre, psd_queue)
-            self.analysis_thread = threading.Thread(target = self.analyse_psd, args = (samples, psd_queue))
-            self.analysis_thread.start()
+            if not psd_queue.full() :
+                # self.analyse_psd(samples, fcentre, psd_queue)
+                self.analysis_thread = Process(target = self.analyse_psd, args = (np.copy(samples), psd_queue))
+                self.analysis_thread.start()
 
             # Get the PSD results as they become available
-            if psd_queue.empty() : continue
-            psd_results = psd_queue.get()
-            self.check_trigger(psd_results)
+            while not psd_queue.empty() :
+                psd_results = psd_queue.get()
+                self.check_trigger(psd_results)
 
 
     # Check FFT data for a detection, and save the samples if a detection is triggered
