@@ -1,3 +1,5 @@
+import glob
+import time
 from rtlsdr import *
 import asyncio
 import numpy as np
@@ -22,6 +24,7 @@ CAPTURES_DIR = DATA_DIR + 'Captures/'
 ARCHIVE_DIR = DATA_DIR + 'Archive/'
 LOG_DIR = DATA_DIR + 'Logs/'
 CONFIG_FILE = os.path.expanduser('~/.radar_config')
+DISK_SPACE_TO_LEAVE = 1e9   # Spare bytes to leave on disk 1GB
 
 SAMPLES_LENGTH = 24                   # Length of the deque for recording samples data
 SAMPLES_BEFORE_TRIGGER = 6            # Number of samples wanted before the trigger (2 = 1 second)
@@ -74,6 +77,43 @@ class TimedSample():
     def __init__(self, sample, sample_time) :
         self.sample = sample
         self.sample_time = sample_time
+
+
+class DiskSpaceChecker(threading.Thread):
+    def __init__(self) :
+        threading.Thread.__init__( self )
+
+    """ Check disk space every 30 mins, and remove oldest files if required. """
+    def run(self):
+        while True :
+ 
+            # Do nothing if enough space (e.g. >1 GB) left
+            statvfs = os.statvfs(os.path.expanduser('~'))
+            space_left = statvfs.f_frsize * statvfs.f_bavail
+            syslog.syslog(syslog.LOG_DEBUG, "Disk space checker, space left: " + str(space_left))
+            if space_left > DISK_SPACE_TO_LEAVE :
+                time.sleep(1800)
+                continue
+
+            # Get the list of files that can be cleaned and sort them by mtime
+            radio_files = glob.glob(DATA_DIR + '**/SMP*.npz', recursive=True)
+            radio_files += glob.glob(DATA_DIR + '**/SPG*.npz', recursive=True)
+            radio_files += glob.glob(DATA_DIR + '**/AUD*.raw', recursive=True)
+            radio_files = sorted(radio_files, key=os.path.getmtime)
+
+            # Remove the oldest observation files until the disk has enough space again
+            while True:
+                statvfs = os.statvfs(os.path.expanduser('~'))
+                space_left = statvfs.f_frsize * statvfs.f_bavail
+                # percent_available = (statvfs.f_frsize * statvfs.f_bavail) / (statvfs.f_frsize * statvfs.f_blocks)  # % disk space available
+                if space_left > DISK_SPACE_TO_LEAVE or len(radio_files) == 0 : break
+                try:
+                    file_for_removal = radio_files.pop(0)
+                    os.remove(file_for_removal)
+                except:
+                    pass
+
+            time.sleep(1800)
 
 
 # Class for logging detections to RMOB file
@@ -756,6 +796,10 @@ if __name__ == "__main__":
     # Start the sample analyser
     sample_analyser = SampleAnalyser(centre_freq)
     sample_analyser.start()
+
+    # Start the disk space checker
+    diskspacechecker = DiskSpaceChecker()
+    diskspacechecker.start()
 
     # Start the waterfall display
     if  display_waterfall :
