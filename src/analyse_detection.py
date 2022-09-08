@@ -490,8 +490,9 @@ if __name__ == "__main__":
                 Pxx = np.concatenate((Pxx, new_Pxx), axis=1)
                 bins = np.concatenate((bins, new_bins), axis=0)
 
+        obs_time = obs_times[0]
         meteor_plotter.set_file_name(file_names[0])
-        meteor_plotter.plot_specgram(Pxx, f, bins, centre_freq, obs_times[0], flipped=False)
+        meteor_plotter.plot_specgram(Pxx, f, bins, centre_freq, obs_time, flipped=False)
 
         os._exit(0)
 
