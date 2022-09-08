@@ -446,11 +446,27 @@ if __name__ == "__main__":
             obs_times.append(new_obs_time)
 
             # Unpack the data
-            npz_data = np.load(file_name)
+            if 'SMP' in file_name and 'npz' in file_name :
+                npz_data = np.load(file_name)
+                samples = npz_data['samples']
+                sample_rate = DEFAULT_SAMPLE_RATE
+                try:
+                    centre_freq = npz_data['centre_freq']
+                    sample_rate = npz_data['sample_rate']
+                    obs_time = datetime.datetime.strptime(str(npz_data['obs_time']), "%Y-%m-%d %H:%M:%S.%f")
+                except Exception as e :
+                    print(e)
 
-            new_bins = npz_data['bins']
-            new_f = npz_data['f']
-            new_Pxx = npz_data['Pxx']
+                new_Pxx, new_f, new_bins = specgram(samples, NFFT=2**12, Fs=DEFAULT_SAMPLE_RATE, noverlap=OVERLAP*(2**12))
+                new_f += centre_freq - 2000
+                new_f /= 1e6
+
+            if 'SPG' in file_name and 'npz' in file_name :
+                npz_data = np.load(file_name)
+
+                new_bins = npz_data['bins']
+                new_f = npz_data['f']
+                new_Pxx = npz_data['Pxx']
 
             # Set the variables for the first observation
             if len(obs_times) == 1 :
