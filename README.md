@@ -147,7 +147,14 @@ user_ID,date,time,signal,noise,frequency,durationc,durations,lat,long,source,tim
 
 Data provided for https://radiometeordetection.org/
 
-## Running the software
+### Software tool for generating monthly colorgramme output file for RMOB.ORG https://www.rmob.org/
+A python script is provided to produce output data to allow use by the RMOB colorgramme software to produce an RMOB colorgramme for upload to RMOB.
+
+```
+python monthly_rmob.py -y 2022 -m 10 -o Observer
+```
+
+## Running the acquisition software
 
 To get help using the acquisition software, run the command:
 ```
