@@ -181,7 +181,7 @@ play -r 37.5k -b 16 -e signed-integer -c 1 <raw_audio_file> sinc 1500-3000
 
 
 Below is an example of a meteor detection spectrogram as displayed by analyse_detection.py. In this example, the head echo can be clearly seen in the line moving across the plot from the right towards the centre. This line gives an indication of the radial velocity and deceleration of the meteor from the Doppler frequency shift.
-The later vertical component of the plot is the radio echo from the plasma trail. This echo from the plasma trail can also show Doppler frequency shifts due to high altitude winds.
+The later vertical component of the plot is the radio echo from the plasma trail. This echo from the plasma trail can also show Doppler frequency shifts.
 ![alt text](https://github.com/rabssm/MeteorRadio/blob/main/doc/sample.png)
 
 To make the software run automatically on every boot, add the command to crontab using the command:
