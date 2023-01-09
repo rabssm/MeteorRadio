@@ -24,7 +24,7 @@ JUNK_DIR =  os.path.expanduser('~/radar_data/Junk')
 
 OVERLAP = 0.75           # Overlap (0.75 is 75%)
 
-NUM_FFT = 2**16
+NUM_FFT = 2**12
 DEFAULT_SAMPLE_RATE = 37500
 
 HELP_TEXT = 'Command keys:\n' + \
@@ -272,9 +272,10 @@ class MeteorPlotter() :
 
         if save_images :
             # Save PSD as an image file
-            image_filename = DATA_DIR + '/PSD_' + str(int(centre_freq)) + '_' + obs_time.strftime('_%Y%m%d_%H%M%S_%f.png')
+            image_filename = DATA_DIR + '/PSD_' + str(int(centre_freq)) + obs_time.strftime('_%Y%m%d_%H%M%S_%f.png')
             print("Saving", image_filename)
             plt.savefig(image_filename)
+            plt.close()
 
         #### Displays Z value of mouse cursor ####
         if not utc_time :
@@ -497,23 +498,6 @@ if __name__ == "__main__":
         os._exit(0)
 
 
-    if save_images :
-        file_names = file_or_dir
-        for index, file_name in enumerate(file_names) :
-            # Unpack the data
-            obs_time, centre_freq, sample_rate = get_observation_data(file_name)
-            npz_data = np.load(file_name)
-
-            bins = npz_data['bins']
-            if sample_rate is not None : bins /= sample_rate
-            f = npz_data['f']
-            Pxx = npz_data['Pxx']
-
-            meteor_plotter.set_file_name(file_name)
-            meteor_plotter.plot_specgram(Pxx, f, bins, centre_freq, obs_time, flipped=False, save_images=True, noplot=True)
-
-        os._exit(0)        
-
 
     # Get all filenames in directory to allow scrolling through
     if os.path.isdir(file_or_dir[0]) :
@@ -531,6 +515,7 @@ if __name__ == "__main__":
 
     if sort_by_ctime : filenames.sort(key=os.path.getctime)
 
+    num_smp_files = sum(['SMP' in el for el in filenames])
 
     # Loop through files, displaying plots
     while file_index < len(filenames) :
@@ -567,11 +552,17 @@ if __name__ == "__main__":
                 except Exception as e :
                     print(e)
 
-                Pxx, f, bins = specgram(samples, NFFT=2**12, Fs=DEFAULT_SAMPLE_RATE, noverlap=OVERLAP*(2**12))
+                Pxx, f, bins = specgram(samples, NFFT=NUM_FFT, Fs=DEFAULT_SAMPLE_RATE, noverlap=OVERLAP*(2**12))
                 f += centre_freq - 2000
                 f /= 1e6
 
-                meteor_plotter.plot_specgram(Pxx, f, bins, centre_freq, obs_time, flipped=False)
+                if save_images :
+                    meteor_plotter.set_file_name(filename)
+                    meteor_plotter.plot_specgram(Pxx, f, bins, centre_freq, obs_time, flipped=False, save_images=True, noplot=True)
+                    if file_index == num_smp_files-1 :
+                        os._exit(0)
+                else:
+                    meteor_plotter.plot_specgram(Pxx, f, bins, centre_freq, obs_time, flipped=False)
 
 
         file_index += file_index_movement
