@@ -6,6 +6,7 @@ import numpy as np
 import datetime
 import os
 import glob
+from calendar import monthrange
 
 DATA_DIR =  os.path.expanduser('~/radar_data/')
 LOG_DIR = DATA_DIR + 'Logs/'
@@ -74,7 +75,7 @@ if __name__ == "__main__":
 
     data = result.groupby(["D", "h"]).size().unstack(fill_value=0).stack()
     pd.set_option("display.max_rows", None, "display.max_columns", None)
-    #print(data)
+    # print(data)
 
     year = np.unique(years.to_numpy())[0]
 
@@ -83,17 +84,30 @@ if __name__ == "__main__":
     for month in months : month_string += (datetime.date(1900, month, 1).strftime('%B') + " ")
 
     days = np.unique(days.to_numpy())
+    # print(days)
     hours = np.unique(hours.to_numpy())
+
 
     data_for_mesh = data.to_numpy()
     data_for_mesh = np.reshape(data_for_mesh, (len(days), len(hours)))
-    #print(data_for_mesh)
 
-    # Set the z-max for the colormesh plot based on 4 standard deviations above the mean
+    # Find missing days from missing log files
+    missing_days = set(range(1, monthrange(year, month)[1])) - set(days)
+    print("Missing days", missing_days)
+
+    zeros_row = np.zeros((1, 24))
+    print(zeros_row.shape)
+    # data_for_mesh = np.insert(data_for_mesh, 3, zeros_row, 0)
+
+    print(data_for_mesh, data_for_mesh.shape)
+
+
+
+    # Set the z-max for the colormesh plot based on 3 standard deviations above the mean
     data_mean = np.mean(data_for_mesh)
     data_std = np.std(data_for_mesh)
     if graph_zlimit == 0 :
-        data_vmax = data_mean + (4 * data_std)
+        data_vmax = data_mean + (3 * data_std)
     else : data_vmax = graph_zlimit
 
 
@@ -104,6 +118,7 @@ if __name__ == "__main__":
 
     fig = plt.figure(figsize=(12,9))
     ax = fig.add_subplot(111)
+    ax.set_facecolor('0.0')
     ax.set_title('Radio Meteor Detections ' + str(days[0]) + "-" + str(days[-1]) + " " + str(month_string) + str(year) + " (" + tx_source + " -> " + region + " " + country + ")\n", fontsize=16)
     qmesh = ax.pcolormesh(x_range, y_range, data_for_mesh.transpose(), cmap='gnuplot', vmin=0, vmax=data_vmax)  # jet and terrain look good too
     colour_bar = fig.colorbar(qmesh,ax=ax)
@@ -112,12 +127,12 @@ if __name__ == "__main__":
     ax.set_xlabel("Day of month")
     ax.set_ylabel("Hour of day (UT)")
     plt.gca().invert_yaxis()
-    plt.xticks(x_range)
+    plt.xticks(np.arange(1, monthrange(year, month)[1]+1))
 
     # Loop over data dimensions and create text annotations.
     for i in range(len(days)):
         for j in range(len(hours)):
-            text = ax.text(i+days[0]+0.2, j+0.8, data_for_mesh[i, j], ha="left", va="bottom", color="lightgreen", fontsize=8)
+            text = ax.text(i+days[0]+0.2, j+0.8, data_for_mesh[i, j], ha="left", va="bottom", color="black", fontsize=8)
 
     # Limit values
     # data_for_mesh[data_for_mesh > 60] = 60
