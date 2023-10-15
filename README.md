@@ -80,7 +80,7 @@ The analyse_detection.py matplotlib tool can be used to visualise and analyse th
 
 ### Additional Software Modules
 The software uses the pyrtlsdr package for reading the USB data from the RTL SDR dongle. It also needs python-matplotlib and numpy for the FFT routines. The following external modules are required to run the software.
-These can be installed with the commands, and has been tested on Raspbian Bullseye:
+These can be installed with the installation commands below, and has been tested on Raspbian Bullseye:
 ```
 sudo apt update
 sudo apt install -y rtl-sdr python3-numpy python3-setuptools python3-pip libusb-dev python3-matplotlib libatlas-base-dev python3-scipy
