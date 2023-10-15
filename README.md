@@ -1,4 +1,4 @@
-# Raspberry Pi Radio Detection of Meteors
+# Raspberry Pi Radio Meteor Detector
 
 
 ## Requirements
