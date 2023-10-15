@@ -14,7 +14,7 @@ Recommended HB9-2 HB9CV 2 ELEMENT ANTENNA for the GRAVES frequency 143.05 MHz.
 
 #### RPi control box
 A Raspberry Pi 3B or 4, with one available USB port. Power supply. 8GB or larger SD Card.
-Recommend that the latest version of Raspbian is installed. At the time of writing, this is Raspbian Buster.
+Recommended OS is Raspbian Bullseye.
 
 A wifi or wired ethernet connection to the internet is required to maintain the NTP time.
 
@@ -80,11 +80,11 @@ The analyse_detection.py matplotlib tool can be used to visualise and analyse th
 
 ### Additional Software Modules
 The software uses the pyrtlsdr package for reading the USB data from the RTL SDR dongle. It also needs python-matplotlib and numpy for the FFT routines. The following external modules are required to run the software.
-These can be installed with the commands:
+These can be installed with the commands, and has been tested on Raspbian Bullseye:
 ```
 sudo apt update
-sudo apt install -y rtl-sdr python-numpy python-setuptools python-pip libusb-dev python-matplotlib libatlas-base-dev
-pip install pyrtlsdr scipy
+sudo apt install -y rtl-sdr python3-numpy python3-setuptools python3-pip libusb-dev python3-matplotlib libatlas-base-dev python3-scipy
+pip install pyrtlsdr
 ```
 
 To ensure that the RTL SDR dongle will work on your system, run the rtl_test program. Check that this detects your device and runs correctly.
@@ -94,7 +94,7 @@ rtl_test
 
 The pandas package is needed to create the monthly detection counts graphs:
 ```
-pip install pandas
+sudo apt install python3-pandas
 ```
 
 Playing of audio and conversion of the raw data files to audio .wav files by the analysis software requires the sox package:
