@@ -1,0 +1,6 @@
+numpy>=2.2.3
+scipy>=1.15.1
+matplotlib>=3.10.0
+pandas>=2.2.3
+pyrtlsdr>=0.3.0
+
