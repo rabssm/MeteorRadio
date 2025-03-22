@@ -14,7 +14,7 @@ Recommended HB9-2 HB9CV 2 ELEMENT ANTENNA for the GRAVES frequency 143.05 MHz.
 
 #### RPi control box
 A Raspberry Pi 3B or 4, with one available USB port. Power supply. 8GB or larger SD Card.
-Recommended OS is Raspbian Bullseye.
+Recommended OS is Raspbian Bookworm.
 
 A wifi or wired ethernet connection to the internet is required to maintain the NTP time.
 
@@ -78,13 +78,17 @@ Note. It may be necessary to experiment with the -s 'SNR' option to determine th
 ### Analysis Software
 The analyse_detection.py matplotlib tool can be used to visualise and analyse the resultant detection SPC or SMP npz files. This tool imports matplotlib and scipy.
 
-### Additional Software Modules
-The software uses the pyrtlsdr package for reading the USB data from the RTL SDR dongle. It also needs python-matplotlib and numpy for the FFT routines. The following external modules are required to run the software.
-These can be installed with the installation commands below, and has been tested on Raspbian Bullseye:
+### Installation
+The software uses the pyrtlsdr package for reading the USB data from the RTL SDR dongle. It also needs python-matplotlib and numpy for the FFT routines.
+The required python modules can be installed with the installation commands below, and has been tested on Raspbian Bookworm:
 ```
-sudo apt update
-sudo apt install -y rtl-sdr python3-numpy python3-setuptools python3-pip libusb-dev python3-matplotlib libatlas-base-dev python3-scipy
-pip install pyrtlsdr
+# Clone this repository
+git clone https://github.com/rabssm/MeteorRadio.git
+
+# Create the virtual environmemt in which to install and run the software
+python -m venv ~/vMeteorRadio
+source ~/vMeteorRadio/bin/activate
+pip install -r requirements.txt
 ```
 
 To ensure that the RTL SDR dongle will work on your system, run the rtl_test program. Check that this detects your device and runs correctly.
