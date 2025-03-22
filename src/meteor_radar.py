@@ -8,6 +8,8 @@ import re
 # import matplotlib.pyplot as plt
 from matplotlib.mlab import specgram
 import scipy.signal as scipy_signal
+from scipy.signal import ShortTimeFFT
+from scipy.signal.windows import gaussian, hamming
 from collections import deque
 from queue import Queue
 import os
@@ -51,9 +53,11 @@ ANALYSIS_OVERLAP = 0.5     # Overlap for detection analysis
 COMPRESSION_FREQUENCY_BAND = 1000   # Band for compression data saving is +/- 1000 Hz
 AUDIO_FREQUENCY_BANDPASS = [1500, 3000]   # Bandpass filter for audio around 2 kHz
 NUM_FFT = 2**15
+HOP=int(NUM_FFT*ANALYSIS_OVERLAP)
 
 # Trigger condition settings
 TRIGGERS_REQUIRED = 1
+MAX_MEDIAN_NOISE_RATIO = 3
 
 # Handle process signals
 def signalHandler (signum, frame) :
@@ -414,13 +418,21 @@ class SampleAnalyser(threading.Thread):
         print("Time for each sample", self.sample_time)
         print("SDR tuning frequency:", sdr.center_freq)
         print("SDR gain:", sdr.gain)
+        print("Samples type:", samples.dtype)
+        print("No FFT's:", int(NUM_FFT))
+        print("No overlaps:", int(ANALYSIS_OVERLAP*NUM_FFT))
 
         # Do a first PSD to get frequency bands
         # decimated_samples = scipy_signal.decimate(samples, DECIMATION)
         # Pxx, f, bins = specgram(decimated_samples, NFFT=int(NUM_FFT/DECIMATION), Fs=self.decimated_sample_rate/1e6, noverlap=int(OVERLAP*(NUM_FFT/DECIMATION)))
-        Pxx, f, bins = specgram(samples, NFFT=int(NUM_FFT), Fs=self.sdr_sample_rate/1e6, noverlap=int(ANALYSIS_OVERLAP*NUM_FFT))
-
-        f += self.sdr_freq_mhz
+        # Pxx, f, bins = specgram(samples, NFFT=int(NUM_FFT), Fs=self.sdr_sample_rate/1e6, noverlap=int(ANALYSIS_OVERLAP*NUM_FFT))
+        window = hamming(NUM_FFT, sym=True)  # symmetric Gaussian window
+        sft = ShortTimeFFT(window, hop=HOP, fs=self.sdr_sample_rate, mfft=NUM_FFT, fft_mode='centered')
+        Pxx = sft.spectrogram(samples)
+        # bins = np.arange(0, Px.shape[1])
+        f = sft.f
+        f = f/1e6 + self.sdr_freq_mhz
+ 
         self.noise_calculation_band = np.where((f*1e6 > (self.centre_freq + noise_calculation_band[0])) & (f*1e6 <= (self.centre_freq + noise_calculation_band[1])))
         self.detection_band = np.where((f*1e6 > (self.centre_freq + detection_frequency_band[0])) & (f*1e6 <= (self.centre_freq + detection_frequency_band[1])))
         print("Sampling frequency band", f[0], f[-1])
@@ -448,7 +460,7 @@ class SampleAnalyser(threading.Thread):
 
     # Check FFT data for a detection, and save the samples if a detection is triggered
     def check_trigger(self, psd_results) :
-        mn, sigmedian, sigmax, peak_freq = psd_results
+        mn, sigmedian, sigmax, peak_freq, ratio_median = psd_results
         self.median_noise = sigmedian
 
         # Use the median noise for the SNR calculation
@@ -463,6 +475,13 @@ class SampleAnalyser(threading.Thread):
             print("Triggered at", datetime.datetime.now())
             if self.trigger_count == 0 :
                 syslog.syslog(syslog.LOG_DEBUG, "Radio detection triggered at " + str(datetime.datetime.now()) + stats)
+                syslog.syslog(syslog.LOG_DEBUG, "Median noise ratio: " + str(ratio_median))
+
+                if ratio_median > MAX_MEDIAN_NOISE_RATIO :
+                    syslog.syslog(syslog.LOG_DEBUG, "Detection cancelled due to high noise")
+                    trigger = False
+                    self.trigger_count = -1
+
             self.trigger_count += 1
             print("Trigger count:", self.trigger_count)
 
@@ -545,10 +564,16 @@ class SampleAnalyser(threading.Thread):
         syslog.syslog(syslog.LOG_DEBUG, "Saving " + sample_filename)
         print("Saving", sample_filename)
         np.savez(sample_filename, obs_time=str(obs_time), centre_freq=centre_freq, sample_rate=self.decimated_sample_rate, samples=np.array(decimated_samples).astype("complex64"))
+        print("\a")
 
         # Log the data
-        Pxx, f, bins = specgram(decimated_samples, NFFT=int(NUM_FFT/DECIMATION), Fs=self.decimated_sample_rate/1e6, noverlap=int(OVERLAP*(NUM_FFT/DECIMATION)))
-        f += sda_centre_freq/1e6
+        window = hamming(NUM_FFT, sym=True)  # symmetric Gaussian window
+        sft = ShortTimeFFT(window, hop=HOP, fs=self.sdr_sample_rate, mfft=NUM_FFT, fft_mode='centered')
+        Pxx = sft.spectrogram(raw_samples)
+        bins = np.arange(0, Pxx.shape[1], dtype=float)
+        # f = np.arange(0, Pxx.shape[0], dtype=float)
+        f = sft.f
+        f = f/1e6 + self.sdr_freq_mhz
 
         # Restrict the band for saving to a band around the required centre frequency
         freq_slice = np.where((f >= (centre_freq-COMPRESSION_FREQUENCY_BAND)/1e6) & (f <= (centre_freq+COMPRESSION_FREQUENCY_BAND)/1e6))
@@ -565,16 +590,23 @@ class SampleAnalyser(threading.Thread):
     def save_fft(self, samples_forspecgram, sda_centre_freq, centre_freq, sample_rate, obs_time) :
 
         # Create the specgram
-        # Pxx, f, bins, im = plt.specgram(samples_forspecgram, NFFT=NUM_FFT, Fs=sample_rate/1e6, Fc=sda_centre_freq/1e6, noverlap=COMPRESSION_OVERLAP*NUM_FFT, xextent=[0, len(samples_forspecgram)/sample_rate])
-        # Pxx, f = psd(samples, NFFT=NUM_FFT, Fs=sdr.sample_rate/1e6, noverlap=OVERLAP*NUM_FFT)
-
         if self.decimate_before_saving :
             decimated_samples = scipy_signal.decimate(samples_forspecgram, DECIMATION)
-            Pxx, f, bins = specgram(decimated_samples, NFFT=int(NUM_FFT/DECIMATION), Fs=self.decimated_sample_rate/1e6, noverlap=int(OVERLAP*(NUM_FFT/DECIMATION)))
-        else:
-            Pxx, f, bins = specgram(samples_forspecgram, NFFT=NUM_FFT, Fs=sample_rate/1e6, noverlap=OVERLAP*NUM_FFT)
+            # Pxx, f, bins = specgram(decimated_samples, NFFT=int(NUM_FFT/DECIMATION), Fs=self.decimated_sample_rate/1e6, noverlap=int(OVERLAP*(NUM_FFT/DECIMATION)))
+            window = hamming(NUM_FFT/DECIMATION, sym=True)  # symmetric Gaussian window
+            sft = ShortTimeFFT(window, hop=HOP, fs=self.sdr_sample_rate, mfft=NUM_FFT/DECIMATION, fft_mode='centered')
+            Pxx = sft.spectrogram(decimated_samples)
+            f = sft.f
 
-        f += sda_centre_freq/1e6
+        else:
+            window = hamming(NUM_FFT, sym=True)  # symmetric Gaussian window
+            sft = ShortTimeFFT(window, hop=HOP, fs=self.sdr_sample_rate, mfft=NUM_FFT, fft_mode='centered')
+            Pxx = sft.spectrogram(samples_forspecgram)
+            f = sft.f
+
+        f = f/1e6 + self.sdr_freq_mhz
+        # f += sda_centre_freq/1e6
+        bins = np.arange(0, Pxx.shape[1])
 
         # Restrict the band for saving to a band around the required centre frequency
         freq_slice = np.where((f >= (centre_freq-COMPRESSION_FREQUENCY_BAND)/1e6) & (f <= (centre_freq+COMPRESSION_FREQUENCY_BAND)/1e6))
@@ -644,9 +676,14 @@ class SampleAnalyser(threading.Thread):
         # NOTE: Decimation before taking the specgram is slower than doing the specgram on the raw sample data
         # decimated_samples = scipy_signal.decimate(samples, DECIMATION)
         # Pxx, f, bins = specgram(decimated_samples, NFFT=int(NUM_FFT/DECIMATION), Fs=self.decimated_sample_rate/1e6, noverlap=int(OVERLAP*(NUM_FFT/DECIMATION)))
-        Pxx, f, bins = specgram(samples, NFFT=int(NUM_FFT), Fs=self.sdr_sample_rate/1e6, noverlap=int(ANALYSIS_OVERLAP*NUM_FFT))
-
-        f += self.sdr_freq_mhz
+        # Pxx, f, bins = specgram(samples, NFFT=int(NUM_FFT), Fs=self.sdr_sample_rate/1e6, noverlap=int(ANALYSIS_OVERLAP*NUM_FFT))
+        window = hamming(NUM_FFT, sym=True)  # symmetric Gaussian window
+        sft = ShortTimeFFT(window, hop=HOP, fs=self.sdr_sample_rate, mfft=NUM_FFT, fft_mode='centered')
+        Pxx = sft.spectrogram(samples)
+        # bins = np.arange(0, Px.shape[1])
+        # f = np.arange(0, Pxx.shape[0], dtype=float)
+        f = sft.f
+        f = f/1e6 + self.sdr_freq_mhz
 
         # Add this to add processed specgram to waterfall queue for waterfall display
         # try:
@@ -665,10 +702,19 @@ class SampleAnalyser(threading.Thread):
         sigmax = np.max(x)
         maxpos = np.argmax(np.max(x, axis=1))
         peak_freq = f[maxpos]
+        
+        # Get the median power level for each time step
+        time_medians = np.median(Pxx, axis=0)
+        median_median = np.median(time_medians)
+        max_median = np.max(time_medians)
+        ratio_median = max_median/median_median
+        if ratio_median > MAX_MEDIAN_NOISE_RATIO :
+            syslog.syslog(syslog.LOG_DEBUG, "Noise ratio max/median: " + str(ratio_median))
+        #np.any(time_medians > threshold)
 
         # self.find3f(x)
 
-        psd_queue.put((mn, sigmedian, sigmax, peak_freq))
+        psd_queue.put((mn, sigmedian, sigmax, peak_freq, ratio_median))
 
 
     # Find 3 frequencies with most signal
