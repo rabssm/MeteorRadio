@@ -70,7 +70,7 @@ The software tunes the USB software radio to a central frequency 2 kHz below the
 
 
 #### Resource Usage and Performance
-The acquisition software uses about 60% of one CPU core of the Pi4, and about 90% of one core on a Pi3b. When a detection is made, a separate python MultiProcess is started to perform the FFT on the 10 seconds of stored sample data, and then store the data in the numpy npz format. This process uses 100% of a CPU core for about 10s.
+The acquisition software uses about 50% of one CPU core of the Pi4, and about 90% of one core on a Pi3b. When a detection is made, a separate python MultiProcess is started to perform the FFT on the 10 seconds of stored sample data, and then store the data in the numpy npz format. This process uses 100% of a CPU core for about 10s.
 It is recommended that when running using a Pi3b, the --decimate option is used, as this significantly improves performance of the FFT routines for storing the detections.
 
 Note. It may be necessary to experiment with the -s 'SNR' option to determine the optimum SNR detection threshold for the specific antenna/receiving equipment. The default SNR is set to 45 (~16dB). If there are too many false positives, then the SNR threshold should be increased.
@@ -85,20 +85,19 @@ The required python modules can be installed with the installation commands belo
 # Clone this repository
 git clone https://github.com/rabssm/MeteorRadio.git
 
-# Create the virtual environmemt in which to install and run the software
+# Install required apt packages
+sudo apt update && sudo apt install rtl_sdr libopenblas-dev
+
+# Create a virtual environmemt in which to install and run the software
 python -m venv ~/vMeteorRadio
 source ~/vMeteorRadio/bin/activate
+cd MeteorRadio
 pip install -r requirements.txt
 ```
 
 To ensure that the RTL SDR dongle will work on your system, run the rtl_test program. Check that this detects your device and runs correctly.
 ```
 rtl_test
-```
-
-The pandas package is needed to create the monthly detection counts graphs:
-```
-sudo apt install python3-pandas
 ```
 
 Playing of audio and conversion of the raw data files to audio .wav files by the analysis software requires the sox package:
