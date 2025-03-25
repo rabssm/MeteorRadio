@@ -570,8 +570,10 @@ class SampleAnalyser(threading.Thread):
         window = hamming(NUM_FFT, sym=True)  # symmetric Gaussian window
         sft = ShortTimeFFT(window, hop=HOP, fs=self.sdr_sample_rate, mfft=NUM_FFT, fft_mode='centered')
         Pxx = sft.spectrogram(raw_samples)
-        bins = np.arange(0, Pxx.shape[1], dtype=float)
-        # f = np.arange(0, Pxx.shape[0], dtype=float)
+
+        T_x, N = HOP / sample_rate, Pxx.shape[1]
+        bins = np.arange(N) * T_x
+
         f = sft.f
         f = f/1e6 + self.sdr_freq_mhz
 
@@ -579,7 +581,6 @@ class SampleAnalyser(threading.Thread):
         freq_slice = np.where((f >= (centre_freq-COMPRESSION_FREQUENCY_BAND)/1e6) & (f <= (centre_freq+COMPRESSION_FREQUENCY_BAND)/1e6))
         f = f[freq_slice]
         Pxx = Pxx[freq_slice,:][0]
-        bins /= 1e6      # Convert bins data to time in seconds
 
         # Log the capture stats
         self.log_capture_stats(Pxx, f, bins, obs_time)
@@ -606,13 +607,14 @@ class SampleAnalyser(threading.Thread):
 
         f = f/1e6 + self.sdr_freq_mhz
         # f += sda_centre_freq/1e6
-        bins = np.arange(0, Pxx.shape[1])
+        # TODO Sort out bins - currently time is 0-190
+        bins = np.arange(0, Pxx.shape[1], dtype=float)
+        # bins = bins/1e6      # Convert bins data to time in seconds
 
         # Restrict the band for saving to a band around the required centre frequency
         freq_slice = np.where((f >= (centre_freq-COMPRESSION_FREQUENCY_BAND)/1e6) & (f <= (centre_freq+COMPRESSION_FREQUENCY_BAND)/1e6))
         f = f[freq_slice]
         Pxx = Pxx[freq_slice,:][0]
-        bins /= 1e6      # Convert bins data to time in seconds
 
         # Log the capture stats
         self.log_capture_stats(Pxx, f, bins, obs_time)
@@ -796,7 +798,8 @@ if __name__ == "__main__":
     ap.add_argument("-f", "--frequency", type=float, default=143.05e6, help="Centre frequency. Default is GRAVES (143.05 MHz)")
     ap.add_argument("-g", "--gain", type=str, default=str(SDR_GAIN), help="SDR tuner gain (0-50, auto). Default is 50")
     ap.add_argument("-s", "--snr_threshold", type=float, default=45, help="SNR threshold. Default is 45 (~16 dB)")
-    ap.add_argument("-r", "--raw", action='store_true', help="Store raw sample data")
+    ap.add_argument("-r", "--raw", action='store_true', default=True, help="Store raw sample data - default")
+    ap.add_argument("--fft", action='store_true', help="Store data as FFT")
     ap.add_argument("-n", "--noaudio", action='store_true', help="Disable saving of audio data")
     ap.add_argument("-d", "--decimate", action='store_true', help="Decimate data for spectrogram before saving")
     ap.add_argument("-c", "--capturetodated", action='store_true', help="Store captures to dated directories e.g. ~/radar_data/Archive/20220621")
@@ -810,6 +813,7 @@ if __name__ == "__main__":
     sdr_gain = args['gain']
     snr_threshold = args['snr_threshold']
     save_raw_samples = args['raw']
+    save_fft_samples = args['fft']
     no_audio = args['noaudio']
     decimate_before_saving = args['decimate']
     capturetodated = args['capturetodated']
@@ -818,11 +822,18 @@ if __name__ == "__main__":
     detection_frequency_band = args['detectionband']
     noise_calculation_band = args['noiseband']
 
+    if save_fft_samples :
+        save_raw_samples = False
+
     # Set up the logging
     # logging.basicConfig(filename=LOG_FILE, format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.INFO)
 
     print("Detection frequency:", centre_freq)
     print("SNR threshold:", snr_threshold)
+    if save_raw_samples :
+        print("Saving raw sample data")
+    else:
+        print("Saving data in FFT format")
 
     # Make the data directories
     make_directories()
