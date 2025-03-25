@@ -18,12 +18,11 @@ Recommended OS is Raspbian Bookworm.
 
 A wifi or wired ethernet connection to the internet is required to maintain the NTP time.
 
-
 ## Software
 ### Acquisition and Detection Software
-The software uses python3.
+The software uses Python3.
 The acquisition software reads the raw data from the USB radio and does a fast fourier transform (FFT) on each sample block as it is received. The FFT of each sample block is then analysed to check for a peak signal above the SNR threshold at a frequency +/- 120 Hz of the target frequency (GRAVES 143.05 MHz).
-After each detection trigger, the software stores the sample data for the next 10 seconds, converts the sample data to the frequency domain and stores the data. The detection data is stored in 2 files, the raw audio data in the form of a raw audio file, and the FFT data in the form of a numpy npz file.
+After each detection trigger, the software stores the raw sample data for the next 10 seconds as an SMP file. If the --fft option is used, the detection data is stored in 2 files, the raw audio data in the form of a raw audio file, and the FFT data in the form of an SPG numpy npz file.
 
 #### Observation Data
 Observation data is produced in the directories:
@@ -35,9 +34,19 @@ Observation data is produced in the directories:
     Junk/           Directory for detections which are of no interest
 
 ```
+##### Raw Observation Data
+Raw observation data is acquired by default. This produces files containing the raw I/Q sample data from the SDR in the form of a numpy npz file with the name format:
 
-Output filename format.
+```
+SMP_FFFFFFFFF_YYYYMMDD_HHMMSS_%%%%%%.npz
+e.g.
+SMP_143050000_20220622_152435_196974.npz
+```
 
+These raw observation detection files are about 3.1 MB in size. They contain all of the information required for a detailed analysis of the meteor detection for example for high resolution head echo analysis.
+
+##### FFT Output filename format
+FFT observation data is required when the --fft command line option is used.
 ```
 Audio file:     AUD_FFFFFFFFF_YYYYMMDD_HHMMSS_%%%%%%.raw
 FFT file:       SPG_FFFFFFFFF_YYYYMMDD_HHMMSS_%%%%%%.npz
@@ -52,18 +61,6 @@ SPG_143050000_20220206_132454_941629.npz
 ```
 
 Audio and FFT detection files are about 800 kB in size.
-
-##### Raw Observation Data
-Raw observation data can be acquired instead using the -r option. This produces files containing the raw I/Q sample data from the SDR in the form of a numpy npz file with the name format:
-
-```
-SMP_FFFFFFFFF_YYYYMMDD_HHMMSS_%%%%%%.npz
-e.g.
-SMP_143050000_20220622_152435_196974.npz
-```
-
-These raw observation detection files are about 3.1 MB in size. They contain all of the information required for a detailed analysis of the meteor detection for example for high resolution head echo analysis.
-
 
 #### Radio Tuning
 The software tunes the USB software radio to a central frequency 2 kHz below the required frequency. This is so that a meteor detection yields an approximately 2 kHz audible tone on the upper sideband. The default frequency for radio meteor detection is the frequency of the GRAVES transmitter 143.05 MHz. The required frequency can be changed using the -f option.
