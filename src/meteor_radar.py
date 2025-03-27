@@ -606,10 +606,9 @@ class SampleAnalyser(threading.Thread):
             f = sft.f
 
         f = f/1e6 + self.sdr_freq_mhz
-        # f += sda_centre_freq/1e6
-        # TODO Sort out bins - currently time is 0-190
-        bins = np.arange(0, Pxx.shape[1], dtype=float)
-        # bins = bins/1e6      # Convert bins data to time in seconds
+        
+        T_x, N = HOP / sample_rate, Pxx.shape[1]
+        bins = np.arange(N) * T_x
 
         # Restrict the band for saving to a band around the required centre frequency
         freq_slice = np.where((f >= (centre_freq-COMPRESSION_FREQUENCY_BAND)/1e6) & (f <= (centre_freq+COMPRESSION_FREQUENCY_BAND)/1e6))
