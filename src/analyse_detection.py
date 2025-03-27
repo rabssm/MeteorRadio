@@ -5,6 +5,8 @@ import matplotlib.dates as mdates
 import matplotlib.patheffects as path_effects
 from matplotlib.mlab import specgram
 import scipy.interpolate as si
+from scipy.signal import ShortTimeFFT
+from scipy.signal.windows import gaussian, hamming
 import os
 import shutil
 from stat import S_IREAD, S_IRGRP, S_IROTH
@@ -26,6 +28,7 @@ OVERLAP = 0.75           # Overlap (0.75 is 75%)
 
 NUM_FFT = 2**12
 DEFAULT_SAMPLE_RATE = 37500
+HOP=int(NUM_FFT*(1-OVERLAP))
 
 HELP_TEXT = 'Command keys:\n' + \
     'Right arrow    next file\n' + \
@@ -279,7 +282,7 @@ class MeteorPlotter() :
 
         #### Displays Z value of mouse cursor ####
         if not utc_time :
-            func = si.interp2d(f, bins, Pxx.T)
+            func = si.RectBivariateSpline(bins, f, Pxx.T)
             def fmt(x, y):
                 z = np.take(func(x, y), 0)
                 return 'x={x:.5f}  y={y:.5f}  z={z:.5f}'.format(x=x, y=y, z=z)
@@ -552,9 +555,15 @@ if __name__ == "__main__":
                 except Exception as e :
                     print(e)
 
-                Pxx, f, bins = specgram(samples, NFFT=NUM_FFT, Fs=DEFAULT_SAMPLE_RATE, noverlap=OVERLAP*(2**12))
-                f += centre_freq - 2000
-                f /= 1e6
+                window = hamming(NUM_FFT, sym=True)  # symmetric Gaussian window
+                sft = ShortTimeFFT(window, hop=HOP, fs=sample_rate, mfft=NUM_FFT, fft_mode='centered')
+                Pxx = sft.spectrogram(samples)
+
+                T_x, N = HOP / sample_rate, Pxx.shape[1]
+                bins = np.arange(N) * T_x
+
+                f = sft.f
+                f = (f + centre_freq - 2000) / 1e6
 
                 if save_images :
                     meteor_plotter.set_file_name(filename)
