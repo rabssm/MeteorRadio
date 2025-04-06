@@ -10,6 +10,8 @@ from matplotlib.mlab import specgram
 import scipy.signal as scipy_signal
 from scipy.signal import ShortTimeFFT
 from scipy.signal.windows import gaussian, hamming
+import scipy.io.wavfile as wav
+
 from collections import deque
 from queue import Queue
 import os
@@ -53,7 +55,7 @@ ANALYSIS_OVERLAP = 0.5     # Overlap for detection analysis
 COMPRESSION_FREQUENCY_BAND = 1000   # Band for compression data saving is +/- 1000 Hz
 AUDIO_FREQUENCY_BANDPASS = [1500, 3000]   # Bandpass filter for audio around 2 kHz
 NUM_FFT = 2**15
-HOP=int(NUM_FFT*ANALYSIS_OVERLAP)
+HOP=int(NUM_FFT*(1-ANALYSIS_OVERLAP))
 
 # Trigger condition settings
 TRIGGERS_REQUIRED = 1
@@ -387,7 +389,7 @@ class SampleAnalyser(threading.Thread):
         self.samples_per_second = 0
         self.centre_freq = centre_freq
         self.save_raw_samples = save_raw_samples
-        self.no_audio = no_audio
+        self.save_audio = save_audio
         self.decimate_before_saving = decimate_before_saving
 
         self.rmb_logger = RMBLogger()
@@ -537,7 +539,7 @@ class SampleAnalyser(threading.Thread):
                 self.save_process2.start()
 
 
-        # Otherwise, save FFT spectrogram and raw audio
+        # Otherwise, save FFT spectrogram
         else:
             # Set the FFT saving process off in one of 2 available subprocesses
             if self.save_process1 is None or not self.save_process1.is_alive() :
@@ -547,10 +549,10 @@ class SampleAnalyser(threading.Thread):
                 self.save_process2 = Process(target=self.save_fft, args=(samples_forspecgram, self.sdr_freq, self.centre_freq, self.sdr_sample_rate, obs_time))
                 self.save_process2.start()
 
-            if not self.no_audio :
-                print("Saving audio")
-                self.audio_process = Process(target=self.save_audio, args=(samples_forspecgram, self.sdr_freq, self.centre_freq, self.sdr_sample_rate, obs_time))
-                self.audio_process.start()
+        if self.save_audio :
+            print("Saving audio")
+            self.audio_process = Process(target=self.save_audio, args=(samples_forspecgram, self.sdr_freq, self.centre_freq, self.sdr_sample_rate, obs_time))
+            self.audio_process.start()
 
 
     # Function to save the raw sample data as an SMP file
@@ -629,27 +631,31 @@ class SampleAnalyser(threading.Thread):
         print("\a")
 
 
-    # Function to save the sample data as a raw audio file - run in a multiprocess
+    # Function to save the sample data as a wav audio file - run in a multiprocess
     def save_audio(self, samples_foraudio, sda_centre_freq, centre_freq, sample_rate, obs_time) :
 
         # Decimate to reduce sample rate from 300 kHz to 37.5 kHz
         x1 = scipy_signal.decimate(samples_foraudio, DECIMATION)
+        sample_rate = int(sample_rate / DECIMATION)
 
         # Create a bandpass filter for the audio signal
         #sos = scipy_signal.butter(10, AUDIO_FREQUENCY_BANDPASS, 'bandpass', fs=sample_rate, output='sos')
         #x2 = scipy_signal.sosfilt(sos, x1)
 
-        x7 = x1
-
-        # Scale audio to adjust volume
-        x7 *= 10000 / np.max(np.abs(x7))
-
         # Save to file as 16-bit signed single-channel audio samples
         # Note that we can throw away the imaginary part of the IQ sample data for USB
-        audio_filename = self.captures_dir + '/AUD_' + str(int(centre_freq)) + obs_time.strftime('_%Y%m%d_%H%M%S_%f.raw')
-        syslog.syslog(syslog.LOG_DEBUG, "Saving " + audio_filename)
-        print("Saving", audio_filename)
-        x7.astype("int16").tofile(audio_filename)
+        wav_filename = self.captures_dir + '/AUD_' + str(int(centre_freq)) + obs_time.strftime('_%Y%m%d_%H%M%S_%f.wav')
+        syslog.syslog(syslog.LOG_DEBUG, "Saving " + wav_filename)
+        print("Saving", wav_filename)
+
+        # Convert to 16-bit PCM format (WAV format requirement)
+        audio_real = np.real(x1).astype(np.float32)
+        audio_data = (audio_real * 32767).astype(np.int16)
+
+        # Save as WAV file
+        wav.write(wav_filename, int(sample_rate), audio_data)
+
+        print("WAV audio file saved successfully: ", wav_filename)
 
 
     # Log the detection statistics
@@ -799,9 +805,9 @@ if __name__ == "__main__":
     ap.add_argument("-s", "--snr_threshold", type=float, default=45, help="SNR threshold. Default is 45 (~16 dB)")
     ap.add_argument("-r", "--raw", action='store_true', default=True, help="Store raw sample data - default")
     ap.add_argument("--fft", action='store_true', help="Store data as FFT")
-    ap.add_argument("-n", "--noaudio", action='store_true', help="Disable saving of audio data")
+    ap.add_argument("-a", "--audio", action='store_true', help="Enable saving of audio wav file")
     ap.add_argument("-d", "--decimate", action='store_true', help="Decimate data for spectrogram before saving")
-    ap.add_argument("-c", "--capturetodated", action='store_true', help="Store captures to dated directories e.g. ~/radar_data/Archive/20220621")
+    ap.add_argument("-c", "--capturetodated", action='store_true', help="Store captures to dated directories e.g. ~/radar_data/Archive/20250328")
     ap.add_argument("-w", "--waterfall", action='store_true', help="Display waterfall graph")
     ap.add_argument("-v", "--verbose", action='store_true', help="Verbose output")
     ap.add_argument("--detectionband", nargs=2, type=int, default=DETECTION_FREQUENCY_BAND, help="Frequency band for detection in Hz. Default is " + str(DETECTION_FREQUENCY_BAND) + " e.g. -120 120")
@@ -813,7 +819,7 @@ if __name__ == "__main__":
     snr_threshold = args['snr_threshold']
     save_raw_samples = args['raw']
     save_fft_samples = args['fft']
-    no_audio = args['noaudio']
+    save_audio = args['audio']
     decimate_before_saving = args['decimate']
     capturetodated = args['capturetodated']
     display_waterfall = args['waterfall']
