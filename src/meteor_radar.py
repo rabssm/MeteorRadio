@@ -389,7 +389,7 @@ class SampleAnalyser(threading.Thread):
         self.samples_per_second = 0
         self.centre_freq = centre_freq
         self.save_raw_samples = save_raw_samples
-        self.save_audio = save_audio
+        self.do_save_audio = save_audio
         self.decimate_before_saving = decimate_before_saving
 
         self.rmb_logger = RMBLogger()
@@ -549,7 +549,7 @@ class SampleAnalyser(threading.Thread):
                 self.save_process2 = Process(target=self.save_fft, args=(samples_forspecgram, self.sdr_freq, self.centre_freq, self.sdr_sample_rate, obs_time))
                 self.save_process2.start()
 
-        if self.save_audio :
+        if self.do_save_audio :
             print("Saving audio")
             self.audio_process = Process(target=self.save_audio, args=(samples_forspecgram, self.sdr_freq, self.centre_freq, self.sdr_sample_rate, obs_time))
             self.audio_process.start()
