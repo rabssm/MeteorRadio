@@ -721,6 +721,17 @@ class SampleAnalyser(threading.Thread):
 
         # self.find3f(x)
 
+        # Added 20/7/2025. Median noise calculation change to try to improve filtering of false detections
+        # Get the time column of the max signal
+        max_index_flat = np.argmax(nx)
+        row_idx, col_idx = np.unravel_index(max_index_flat, nx.shape)
+        # print("Location of max signal (shape,row,col) is", nx.shape, row_idx, col_idx)
+
+        # Use the single time column of the max signal to calculate the median noise value over the noise calculation frequency band
+        column = nx[:, col_idx]
+        sigmedian = np.median(column)
+        # sigmax = np.max(column)
+
         psd_queue.put((mn, sigmedian, sigmax, peak_freq, ratio_median))
 
 
