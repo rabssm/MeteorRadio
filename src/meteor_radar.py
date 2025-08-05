@@ -237,17 +237,25 @@ class MonthlyCsvLogger():
 
 # Class for determining the meteor capture statistics
 class CaptureStatistics() :
-    def __init__(self, Pxx, f, bins, obs_time, snr_threshold) :
+    def __init__(self, Pxx, f, bins, obs_time, snr_threshold, centre_freq) :
         self.Pxx = Pxx
         self.f = f
         self.bins = bins
         self.obs_time = obs_time
         self.snr_threshold = snr_threshold
+        self.centre_freq = centre_freq
         self.meteor_detections = []
+        self.noise_calculation_band = np.where((f*1e6 > (self.centre_freq + noise_calculation_band[0])) & (f*1e6 <= (self.centre_freq + noise_calculation_band[1])))
 
 
     def calculate(self) :
         # Calculate the signal level stats over the detection band
+        # Calculate the mean and median (noise) level over the larger noise calculation band
+        nx = np.float16(self.Pxx[self.noise_calculation_band])
+
+        max_per_time_slot = np.max(nx, axis=0)      # shape: (193,)
+        median_per_time_slot = np.median(nx, axis=0)  # shape: (193,)
+
         self.raw_median = np.median(self.Pxx[0:13])    # Calculate noise before detection
         self.log_mn = 10.0*np.log10(self.raw_median)
         self.log_sigmax = 10.0*np.log10(np.max(self.Pxx))
@@ -261,22 +269,26 @@ class CaptureStatistics() :
         self.detection_freq = self.peak_freq
         self.detection_time = self.obs_time + datetime.timedelta(seconds=2)
 
-
         try:
-            # Find detection time and duration
-            times_gt_thresh = self.bins[np.where(np.any(self.Pxx > self.raw_median * self.snr_threshold, axis = 0))]
-            if len(times_gt_thresh) > 0 :
-                prev_time = times_gt_thresh[0]
-                det_start_time = 0.0
-                for det_time in times_gt_thresh :
-                    if det_time - prev_time > 1.0 :
-                        break
-                    prev_time = det_time
 
-                self.detection_time = self.obs_time + datetime.timedelta(seconds=times_gt_thresh[0])
-                self.detection_duration = prev_time - times_gt_thresh[0] + self.min_detection_duration
-                # print("Detection time", self.detection_time, "Duration", prev_time - times_gt_thresh[0])
+            # Avoid division by zero by adding a small epsilon (or using np.where)
+            epsilon = 1e-10
+            snr_ratio = max_per_time_slot / (median_per_time_slot + epsilon)
 
+            # Create boolean array based on threshold
+            snr_exceeds_threshold = snr_ratio > snr_threshold  # shape: (193,)
+
+            # Find indices where the condition is True
+            true_indices = np.where(snr_exceeds_threshold)[0]
+
+            # Check if there are any True values
+            if true_indices.size > 0:
+                first_true = true_indices[0]
+                last_true = true_indices[-1]
+                self.detection_time = self.obs_time + datetime.timedelta(seconds=self.bins[first_true])
+                if self.bins[last_true] > self.bins[first_true] :
+                    self.detection_duration = self.bins[last_true] - self.bins[first_true]
+                    
             # Find initial frequency of detection
             Pxx_snr = self.Pxx/self.raw_median
             s = np.nonzero(Pxx_snr > self.snr_threshold)
@@ -662,7 +674,7 @@ class SampleAnalyser(threading.Thread):
     def log_capture_stats(self, Pxx, f, bins, obs_time) :
 
         # Calculate the detection statistics from the PSD data
-        capture_statistics = CaptureStatistics(Pxx, f, bins, obs_time, snr_threshold)
+        capture_statistics = CaptureStatistics(Pxx, f, bins, obs_time, snr_threshold, self.centre_freq)
         capture_statistics.calculate()
 
         # Log to syslog
