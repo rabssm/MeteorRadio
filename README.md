@@ -83,7 +83,7 @@ The required python modules can be installed with the installation commands belo
 git clone https://github.com/rabssm/MeteorRadio.git
 
 # Install required apt packages
-sudo apt update && sudo apt install rtl_sdr libopenblas-dev
+sudo apt update && sudo apt install rtl-sdr libopenblas-dev
 
 # Create a virtual environmemt in which to install and run the software
 python -m venv ~/vMeteorRadio
