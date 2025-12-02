@@ -135,7 +135,7 @@ class MeteorPlotter() :
         elif event.key == 't':                 # t key rotates the plot and sets x axis to UTC
             self.plot_specgram(Pxx, f, bins, centre_freq, obs_time, flipped=False, utc_time=True)
         elif event.key == 'F':                 # F key shows full frequency band
-            self.plot_specgram(Pxx, f, bins, centre_freq, obs_time, full_frequency_band=True)
+            self.plot_specgram(Pxx, f, bins, centre_freq, obs_time, full_frequency_band=True, utc_time=True)
         elif event.key == 'h':                 # h key shows histogram
             self.plot_hist(Pxx)
             # plot_psd(Pxx, f, centre_freq)
@@ -461,9 +461,17 @@ if __name__ == "__main__":
                 except Exception as e :
                     print(e)
 
-                new_Pxx, new_f, new_bins = specgram(samples, NFFT=2**12, Fs=DEFAULT_SAMPLE_RATE, noverlap=OVERLAP*(2**12))
-                new_f += centre_freq - 2000
-                new_f /= 1e6
+                window = hamming(NUM_FFT, sym=True)  # symmetric Gaussian window
+                sft = ShortTimeFFT(window, hop=HOP, fs=sample_rate, mfft=NUM_FFT, fft_mode='centered')
+                new_Pxx = sft.spectrogram(samples)
+
+                T_x, N = HOP / sample_rate, new_Pxx.shape[1]
+                new_bins = np.arange(N) * T_x
+
+                f = sft.f
+                f = (f + centre_freq - 2000) / 1e6
+                new_f = f
+
 
             if 'SPG' in file_name and 'npz' in file_name :
                 npz_data = np.load(file_name)
@@ -496,7 +504,7 @@ if __name__ == "__main__":
 
         obs_time = obs_times[0]
         meteor_plotter.set_file_name(file_names[0])
-        meteor_plotter.plot_specgram(Pxx, f, bins, centre_freq, obs_time, flipped=False)
+        meteor_plotter.plot_specgram(Pxx, f, bins, centre_freq, obs_time, flipped=False, utc_time=True)
 
         os._exit(0)
 
