@@ -71,7 +71,7 @@ The acquisition software uses about 50% of one CPU core of the Pi4, and about 90
 
 Note. It may be necessary to experiment with the -s 'SNR' option to determine the optimum SNR detection threshold for the specific antenna/receiving equipment. The default SNR is set to 45 (~16dB). If there are too many false positives, then the SNR threshold should be increased.
 
-Note for Pi3b users: It is not recommended to use the --fft option when running on a Pi3b, as the time overhead in creating the FFT output file can cause problems when there are are a large number of detections over a short time period.
+Note for Pi3b users: It is not recommended to use the --fft option when running on a Pi3b, as the time overhead in creating the FFT output file can cause problems when there are a large number of detections over a short time period.
 
 ### Analysis Software
 The analyse_detection.py matplotlib tool can be used to visualise and analyse the resultant detection SPC or SMP npz files. This tool imports matplotlib and scipy.
