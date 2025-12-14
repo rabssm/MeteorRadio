@@ -608,8 +608,8 @@ class SampleAnalyser(threading.Thread):
         if self.decimate_before_saving :
             decimated_samples = scipy_signal.decimate(samples_forspecgram, DECIMATION)
             # Pxx, f, bins = specgram(decimated_samples, NFFT=int(NUM_FFT/DECIMATION), Fs=self.decimated_sample_rate/1e6, noverlap=int(OVERLAP*(NUM_FFT/DECIMATION)))
-            window = hamming(NUM_FFT/DECIMATION, sym=True)  # symmetric Gaussian window
-            sft = ShortTimeFFT(window, hop=HOP, fs=self.sdr_sample_rate, mfft=NUM_FFT/DECIMATION, fft_mode='centered')
+            window = hamming(int(NUM_FFT/DECIMATION), sym=True)  # symmetric Gaussian window
+            sft = ShortTimeFFT(window, hop=HOP, fs=self.sdr_sample_rate, mfft=int(NUM_FFT/DECIMATION), fft_mode='centered')
             Pxx = sft.spectrogram(decimated_samples)
             f = sft.f
 
