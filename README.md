@@ -68,7 +68,9 @@ The software tunes the USB software radio to a central frequency 2 kHz below the
 
 #### Resource Usage and Performance
 The acquisition software uses about 50% of one CPU core of the Pi4, and about 90% of one core on a Pi3b.
+
 Note. It may be necessary to experiment with the -s 'SNR' option to determine the optimum SNR detection threshold for the specific antenna/receiving equipment. The default SNR is set to 45 (~16dB). If there are too many false positives, then the SNR threshold should be increased.
+
 Note for Pi3b users: The software runs fine when storing raw data (the default). However it is recommended that when running using a Pi3b with the --fft option, the --decimate option is used, as this significantly improves performance of the FFT routines for storing the detections.
 
 ### Analysis Software
