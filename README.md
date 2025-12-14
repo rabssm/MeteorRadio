@@ -7,7 +7,7 @@ This guide assumes basic knowledge of electronics, the Unix environment, and som
 ### Hardware
 
 #### Software Radio
-A Realtek Semiconductor Corp. RTL2832U DVB-T.  The USB dongle is plugged into a Raspberry Pi 3/4 (1-2GB memory) running Raspbian Linux. To check that your USB dongle will work, see the section below regarding the 'rtl_test' command.
+A Realtek Semiconductor Corp. RTL2832U DVB-T. The Nooelec NESDR SMArt v4 and v5 SDR devices have been found to work well. The USB dongle is plugged into a Raspberry Pi 3/4 (1-2GB memory) running Raspbian Linux. To check that your USB dongle will work, see the section below regarding the 'rtl_test' command.
 
 #### Antenna
 Recommended HB9-2 HB9CV 2 ELEMENT ANTENNA for the GRAVES frequency 143.05 MHz.
@@ -67,10 +67,9 @@ The software tunes the USB software radio to a central frequency 2 kHz below the
 
 
 #### Resource Usage and Performance
-The acquisition software uses about 50% of one CPU core of the Pi4, and about 90% of one core on a Pi3b. When a detection is made, a separate python MultiProcess is started to perform the FFT on the 10 seconds of stored sample data, and then store the data in the numpy npz format. This process uses 100% of a CPU core for about 10s.
-It is recommended that when running using a Pi3b, the --decimate option is used, as this significantly improves performance of the FFT routines for storing the detections.
-
+The acquisition software uses about 50% of one CPU core of the Pi4, and about 90% of one core on a Pi3b.
 Note. It may be necessary to experiment with the -s 'SNR' option to determine the optimum SNR detection threshold for the specific antenna/receiving equipment. The default SNR is set to 45 (~16dB). If there are too many false positives, then the SNR threshold should be increased.
+Note for Pi3b users: The software runs fine when storing raw data (the default). However it is recommended that when running using a Pi3b with the --fft option, the --decimate option is used, as this significantly improves performance of the FFT routines for storing the detections.
 
 ### Analysis Software
 The analyse_detection.py matplotlib tool can be used to visualise and analyse the resultant detection SPC or SMP npz files. This tool imports matplotlib and scipy.
