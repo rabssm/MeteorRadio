@@ -413,6 +413,8 @@ if __name__ == "__main__":
     ap.add_argument("-s", "--save", action='store_true', help="Save image files of plotted data")
     ap.add_argument("-c", "--combine", action='store_true', help="Combine data from npz files for plotting")
     ap.add_argument("-t", "--sortbyctime", action='store_true', help="View files sorted by ctime")
+    ap.add_argument("--timeres", action='store_true', help="Display for best time resolution")
+    ap.add_argument("--headecho", action='store_true', help="Display for head acho analysis")
     # ap.add_argument("-f", "--frequency", type=float, default=143.05e6, help="Centre frequency")
     # ap.add_argument("-r", "--rate", type=int, default=960000, help="Sample rate")
     # ap.add_argument("-3", "--3d", action='store_true', help="Show 3d specgram")
@@ -424,6 +426,9 @@ if __name__ == "__main__":
     save_images = args['save']
     combine = args['combine']
     sort_by_ctime = args['sortbyctime']
+    time_res = args['timeres']
+    headecho_res = args['headecho']
+    
     # sample_rate = args['rate']
     # centre_freq = args['frequency']
     # show_3d = args['3d']
@@ -439,6 +444,16 @@ if __name__ == "__main__":
 
     file_index = 0
     file_index_movement = 1
+
+    if time_res:
+        NUM_FFT = 2**8
+        OVERLAP = 0.5
+        HOP=int(NUM_FFT*(1-OVERLAP))
+
+    if headecho_res:
+        NUM_FFT = 2**11
+        OVERLAP = 0.9375
+        HOP=int(NUM_FFT*(1-OVERLAP))
 
     # Combine several files for analysis
     if combine :
