@@ -44,6 +44,7 @@ HELP_TEXT = 'Command keys:\n' + \
     'r              Rotate plot\n' + \
     'F              Show full frequency band\n' + \
     'S              Save the current plot to png image file in ~/radar_data/\n' + \
+    'm              Print current cursor position data\n' + \
     'q              Close current plot\n' + \
     'Esc            Exit viewer'
 
@@ -81,7 +82,7 @@ class MeteorPlotter() :
     def press(self, event):
 
         global file_index, file_index_movement
-        print(event.key)
+        # print(event.key)
 
         # Move data and audio file to Archive folder
         if event.key == 'a':
@@ -205,6 +206,14 @@ class MeteorPlotter() :
 
         elif event.key == 'f1' :
             self.help()
+
+        elif event.key == 'm' :
+            x, y = event.xdata, event.ydata
+            z_value = Pxx[event.x, event.y]
+            print(mdates.num2date(y).strftime('%Y-%m-%d %H:%M:%S.%f'), x, z_value, sep=",")
+            
+            # pos = event.inaxes.format_coord(event.xdata,event.ydata)
+            # print(type(pos))
 
 
     def plot_specgram(self, Pxx, f, bins, centre_freq, obs_time, flipped=False, utc_time=False, full_frequency_band=False, save_images=False, noplot=False) :
