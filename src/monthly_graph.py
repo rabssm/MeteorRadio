@@ -50,7 +50,7 @@ if __name__ == "__main__":
         print(e)
 
     print("Graphing data for", year, month)
-    list_of_files = sorted(glob.glob(LOG_DIR + 'R' + str(year) + '%02d' % month + '*.csv'))
+    list_of_files = sorted(glob.glob(os.path.join(LOG_DIR, 'R' + str(year) + '%02d' % month + '*.csv')))
     if filenames == "":
         filenames = list_of_files
     # print(filenames)
