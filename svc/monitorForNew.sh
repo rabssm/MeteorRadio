@@ -4,9 +4,21 @@
 
 here="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 
-source $HOME/vMeteorRadio/bin/activate
 source $here/config.ini
 
-cd $LOGDIR/../Captures
-
-watchmedo shell-command --patterns='*.npz' --recursive --command '$SRCDIR/../svc/createImages.sh "${watch_src_path}"' .
+cd $LOGDIR
+mkdir -p done
+ls -1tr 20*.csv | tail -2 | while read i ; do 
+    echo $i
+    if [[ -f done/$i ]] ; then
+        diff $i done/$i > /dev/null
+        if [ $? == 1 ] ; then
+            echo uploading $i
+            yr=${i:0:4}
+            mth=${i:5:8}
+            targname="s3://ukmda-rawradiodata/raw/event_log_${yr}${mth}"
+            aws s3 cp $i $targname
+            cp $i done/
+        fi
+    fi 
+done 
