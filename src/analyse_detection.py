@@ -567,7 +567,7 @@ if __name__ == "__main__":
         dirname = file_or_dir[0]
         filenames = sorted(glob.glob(dirname + '/*.npz'))
     else:
-        filenames = [file_or_dir]
+        filenames = file_or_dir
         #if len(filenames) == 1:
         #    dirname = os.path.dirname(filenames[0])
         #    npz_filenames = sorted(glob.glob(dirname + '/*.npz'), reverse=False)
