@@ -297,7 +297,7 @@ class MeteorPlotter():
 
         if save_images:
             # Save PSD as an image file
-            image_filename = DATA_DIR + '/PSD_' + str(int(centre_freq)) + obs_time.strftime('_%Y%m%d_%H%M%S_%f.png')
+            image_filename = IMG_DIR + '/PSD_' + str(int(centre_freq)) + obs_time.strftime('_%Y%m%d_%H%M%S_%f.png')
             print("Saving", image_filename)
             plt.savefig(image_filename)
             plt.close()
@@ -341,7 +341,7 @@ class MeteorPlotter():
 
         if save_images:
             # Save spectrogram as an image file
-            image_filename = DATA_DIR + '/SPG_' + str(int(centre_freq)) + '_' + str(int(sample_rate)) + obs_time.strftime('_%Y%m%d_%H%M%S_%f.png')
+            image_filename = IMG_DIR + '/SPG_' + str(int(centre_freq)) + '_' + str(int(sample_rate)) + obs_time.strftime('_%Y%m%d_%H%M%S_%f.png')
             print("Saving", image_filename)
             plt.savefig(image_filename)
 
@@ -363,7 +363,7 @@ class MeteorPlotter():
 
         if save_images:
             # Save PSD as an image file
-            image_filename = DATA_DIR + '/PSD_' + str(int(centre_freq)) + '_' + str(int(sample_rate)) + obs_time.strftime('_%Y%m%d_%H%M%S_%f.png')
+            image_filename = IMG_DIR + '/PSD_' + str(int(centre_freq)) + '_' + str(int(sample_rate)) + obs_time.strftime('_%Y%m%d_%H%M%S_%f.png')
             print("Saving", image_filename)
             plt.savefig(image_filename)
 

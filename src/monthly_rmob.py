@@ -1,15 +1,14 @@
 import re
 import pandas as pd
 import argparse
-from matplotlib import pyplot as plt
 import numpy as np
 import datetime
 import os
 import glob
 from calendar import monthrange
 
-DATA_DIR =  os.path.expanduser('~/radar_data/')
-LOG_DIR = DATA_DIR + 'Logs/'
+DATA_DIR = os.path.expanduser(os.path.join(os.getenv('MRDATADIR', default='~'),'radar_data'))
+LOG_DIR = os.path.join(DATA_DIR, 'Logs')
 CONFIG_FILE = os.path.expanduser('~/.radar_config')
 
 # Main program
@@ -40,11 +39,11 @@ if __name__ == "__main__":
         with open(config_file_name) as fp:
             for cnt, line in enumerate(fp):
                 line_words = (re.split("[: \n]+", line))
-                if line_words[0] == 'country' : country = line_words[1]
-                if line_words[0] == 'region' : region = line_words[1]
-                if line_words[0] == 'TxSource' : tx_source = line_words[1] 
+                if line_words[0] == 'country': country = line_words[1] # noqa: E701
+                if line_words[0] == 'region': region = line_words[1] # noqa: E701
+                if line_words[0] == 'TxSource': tx_source = line_words[1] # noqa: E701
                 # if line_words[0] == 'observer' : observer_name = line_words[1] 
-    except Exception as e :
+    except Exception as e:
         print(e)
 
     print("Getting data for", year, month, "from", log_dir)
@@ -55,7 +54,7 @@ if __name__ == "__main__":
     frames = []
 
     # Collect the data from the RMOB .csv files
-    for filename in filenames :
+    for filename in filenames:
         df = pd.read_csv(filename)
         frames.append(df)
 
@@ -74,7 +73,8 @@ if __name__ == "__main__":
 
     months = np.unique(months.to_numpy())
     month_string = ""
-    for month in months : month_string += (datetime.date(1900, month, 1).strftime('%B') + " ")
+    for month in months: 
+        month_string += (datetime.date(1900, month, 1).strftime('%B') + " ")
 
     days = np.unique(days.to_numpy())
     hours = np.unique(hours.to_numpy())
@@ -91,12 +91,13 @@ if __name__ == "__main__":
     print("Writing to file:", output_dir + filename)
     file = open(output_dir + filename, 'w')
     
-    for day in days :
-        for hour in hours :
+    for day in days:
+        for hour in hours:
             try: 
                 file.write("%02d%02d%02d%02d,%02d,%d\n" % (year, month, day, hour, hour, data_for_mesh[day-days[0],hour]))
                 # print("%02d%02d%02d%02d,%02d,%d" % (year, month, day, hour, hour, data_for_mesh[day-1,hour]))
-            except Exception : pass
+            except Exception: 
+                pass
     file.close()
 
 
@@ -108,7 +109,8 @@ if __name__ == "__main__":
 
     # Create the top line of the file
     top_line = filename_date.strftime("%b").lower() + "|"
-    for hour in range(0, 24): top_line += (" %02dh|" % (hour))
+    for hour in range(0, 24): 
+        top_line += (" %02dh|" % (hour))
     file.write(top_line + "\n")
 
     # Find missing days from missing log files
@@ -116,12 +118,12 @@ if __name__ == "__main__":
     print("Missing days", missing_days)
 
     # Output the meteor counts
-    for index in range(1,32) :
+    for index in range(1,32):
         out_line = " %02d|" %(index)
-        for hour in range(0, 24) :
+        for hour in range(0, 24):
             # If there are missing days, or no data on some days, set "???""
-            if index in missing_days or index > monthrange(year, month)[1] : out_line += "??? |"
-            elif datetime.datetime(year, month, index, hour) > datetime.datetime.now() : out_line += "??? |"
+            if index in missing_days or index > monthrange(year, month)[1]: out_line += "??? |" # noqa: E701
+            elif datetime.datetime(year, month, index, hour) > datetime.datetime.now(): out_line += "??? |" # noqa: E701
 
             else:
                 try: 
@@ -134,13 +136,14 @@ if __name__ == "__main__":
         file.write(out_line)
 
     # Append the text in the footer file if one exists
-    if footer_file_name is not None :
+    if footer_file_name is not None:
         try:
             footer_file = open(footer_file_name, 'r')
-            for line in footer_file :
+            for line in footer_file:
                 file.write(line)
             footer_file.close()
-        except Exception as e : print(e)
+        except Exception as e:
+            print(e)
 
 
     file.close()
