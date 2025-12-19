@@ -9,4 +9,4 @@ source $here/config.ini
 
 cd $LOGDIR/../Captures
 
-watchmedo shell-command --patterns='*.npz' --recursive --command '$SRCDIR../svc/createImages.sh "${watch_src_path}"' .
+watchmedo shell-command --patterns='*.npz' --recursive --command '$SRCDIR/../svc/createImages.sh "${watch_src_path}"' .
