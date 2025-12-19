@@ -1,0 +1,11 @@
+[Unit]
+Description=Run RBassoms MeteorRadio software
+After=network.target
+
+[Service]
+ExecStart=%h/source/MeteorRadio/svc/meteorradio.sh 
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
