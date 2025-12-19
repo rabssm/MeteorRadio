@@ -9,7 +9,6 @@ source $here/config.ini
 cd $LOGDIR
 mkdir -p done
 ls -1tr 20*.csv | tail -2 | while read i ; do 
-    echo $i
     if [[ -f done/$i ]] ; then
         diff $i done/$i > /dev/null
         if [ $? == 1 ] ; then
@@ -20,5 +19,12 @@ ls -1tr 20*.csv | tail -2 | while read i ; do
             aws s3 cp $i $targname
             cp $i done/
         fi
+    else
+        echo uploading $i
+        yr=${i:0:4}
+        mth=${i:5:8}
+        targname="s3://ukmda-rawradiodata/raw/event_log_${yr}${mth}"
+        aws s3 cp $i $targname
+        cp $i done/
     fi 
 done 
