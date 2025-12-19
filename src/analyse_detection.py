@@ -316,7 +316,7 @@ class MeteorPlotter():
             plt.show(block=len(plt.get_fignums()) < 2)
 
 
-    def plot_3dspecgram(self, Pxx, f, bins, centre_freq):
+    def plot_3dspecgram(self, Pxx, f, bins, centre_freq, save_images=False, noplot=False):
 
         # Limit the data to the narrow frequency band
         freq_slice = np.where((f >= (centre_freq-SPECGRAM_BAND)/1e6) & (f <= (centre_freq+SPECGRAM_BAND)/1e6))
@@ -451,7 +451,7 @@ if __name__ == "__main__":
     ap.add_argument("--colour", type=str, default="PuBu", help="Colour Scheme")
     # ap.add_argument("-f", "--frequency", type=float, default=143.05e6, help="Centre frequency")
     # ap.add_argument("-r", "--rate", type=int, default=960000, help="Sample rate")
-    # ap.add_argument("-3", "--3d", action='store_true', help="Show 3d specgram")
+    ap.add_argument("-3", "--3d", action='store_true', help="Show 3d specgram")
 
     args = vars(ap.parse_args())
 
@@ -466,7 +466,7 @@ if __name__ == "__main__":
     
     # sample_rate = args['rate']
     # centre_freq = args['frequency']
-    # show_3d = args['3d']
+    show_3d = args['3d']
 
     # Print command key help
     print(HELP_TEXT)
@@ -630,6 +630,8 @@ if __name__ == "__main__":
                 if save_images:
                     meteor_plotter.set_file_name(filename)
                     meteor_plotter.plot_specgram(Pxx, f, bins, centre_freq, obs_time, flipped=False, save_images=True, noplot=True)
+                    if show_3d: 
+                        meteor_plotter.plot_3dspecgram(Pxx, f, bins, centre_freq, save_images=True, noplot=True)
                     if file_index == num_smp_files-1:
                         os._exit(0)
                 else:
