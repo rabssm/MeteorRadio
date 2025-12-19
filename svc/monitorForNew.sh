@@ -12,7 +12,6 @@ ls -1tr 20*.csv | tail -2 | while read i ; do
     if [[ -f done/$i ]] ; then
         diff $i done/$i > /dev/null
         if [ $? == 1 ] ; then
-            echo uploading $i
             yr=${i:0:4}
             mth=${i:5:8}
             targname="s3://mjmm-rawradiodata/raw/event_log_${yr}${mth}"
@@ -20,7 +19,6 @@ ls -1tr 20*.csv | tail -2 | while read i ; do
             cp $i done/
         fi
     else
-        echo uploading $i
         yr=${i:0:4}
         mth=${i:5:8}
         targname="s3://mjmm-rawradiodata/raw/event_log_${yr}${mth}"
