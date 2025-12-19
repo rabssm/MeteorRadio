@@ -567,14 +567,14 @@ if __name__ == "__main__":
         dirname = file_or_dir[0]
         filenames = sorted(glob.glob(dirname + '/*.npz'))
     else:
-        filenames = file_or_dir
-        if len(filenames) == 1:
-            dirname = os.path.dirname(filenames[0])
-            npz_filenames = sorted(glob.glob(dirname + '/*.npz'), reverse=False)
-            if len(npz_filenames) > 1:
-                # npz_filenames = list(dict.fromkeys(npz_filenames))    # Ensure filename list is unique
-                file_index = npz_filenames.index(filenames[0])
-                filenames = npz_filenames
+        filenames = [file_or_dir]
+        #if len(filenames) == 1:
+        #    dirname = os.path.dirname(filenames[0])
+        #    npz_filenames = sorted(glob.glob(dirname + '/*.npz'), reverse=False)
+        #    if len(npz_filenames) > 1:
+        #        # npz_filenames = list(dict.fromkeys(npz_filenames))    # Ensure filename list is unique
+        #        file_index = npz_filenames.index(filenames[0])
+        #        filenames = npz_filenames
 
     if sort_by_ctime: 
         filenames.sort(key=os.path.getctime)
