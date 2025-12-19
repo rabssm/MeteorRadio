@@ -28,3 +28,18 @@ ls -1tr 20*.csv | tail -2 | while read i ; do
         cp $i done/
     fi 
 done 
+cd ../Captures
+latestdir=$(ls -1trd 20* | tail -1)
+ls -1tr $latestdir/SMP*.npz | tail -2 | while read i ; do 
+    donelist=$LOGDIR/uploaded.txt
+    if [ -f $donelist ] ; then
+        grep $i $donelist > /dev/null
+        if [ $? == 1 ] ; then 
+            targname="s3://mjmm-rawradiodata/tmp/$(basename $i)"
+            aws s3 cp $i $targname
+            echo $i >> $donelist
+        fi 
+    else
+        echo $i    
+    fi 
+done 
