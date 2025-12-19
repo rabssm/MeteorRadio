@@ -15,7 +15,7 @@ ls -1tr 20*.csv | tail -2 | while read i ; do
             echo uploading $i
             yr=${i:0:4}
             mth=${i:5:8}
-            targname="s3://ukmda-rawradiodata/raw/event_log_${yr}${mth}"
+            targname="s3://mjmm-rawradiodata/raw/event_log_${yr}${mth}"
             aws s3 cp $i $targname
             cp $i done/
         fi
@@ -23,7 +23,7 @@ ls -1tr 20*.csv | tail -2 | while read i ; do
         echo uploading $i
         yr=${i:0:4}
         mth=${i:5:8}
-        targname="s3://ukmda-rawradiodata/raw/event_log_${yr}${mth}"
+        targname="s3://mjmm-rawradiodata/raw/event_log_${yr}${mth}"
         aws s3 cp $i $targname
         cp $i done/
     fi 
