@@ -172,6 +172,13 @@ To analyze the meteor detection FFT data in the .npz files in the output directo
 python analyse_detection.py ~/radar_data
 ```
 
+To visualise the monthly meteor detections recorded in the directory ~/radar_data/Logs :
+```
+python ~/source/MeteorRadar/src/monthly_graph.py
+```
+![alt text](https://github.com/rabssm/MeteorRadio/blob/main/doc/Radio_Meteor_Detections_2025-12.png)
+
+
 The raw sample audio files have a sample rate of 37.5k. They can be converted to .wav files using sox or played :
 ```
 sox -r 37.5k -b 16 -e signed-integer -c 1 <audio_file.raw> <audio_file.wav>
