@@ -174,7 +174,7 @@ python analyse_detection.py ~/radar_data
 
 To visualise the monthly meteor detections recorded in the directory ~/radar_data/Logs :
 ```
-python ~/source/MeteorRadar/src/monthly_graph.py
+python monthly_graph.py
 ```
 ![alt text](https://github.com/rabssm/MeteorRadio/blob/main/doc/Radio_Meteor_Detections_2025-12.png)
 
