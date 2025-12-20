@@ -28,7 +28,7 @@ ls -1tr 20*.csv | tail -2 | while read i ; do
 done 
 cd ../Captures
 latestdir=$(ls -1trd 20* | tail -1)
-ls -1tr $latestdir/SMP*.npz | tail -2 | while read i ; do 
+ls -1tr $latestdir/SMP*.npz | tail -1 | while read i ; do 
     donelist=$LOGDIR/uploaded.txt
     if [ -f $donelist ] ; then
         grep $i $donelist > /dev/null
