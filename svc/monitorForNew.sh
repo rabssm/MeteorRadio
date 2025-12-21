@@ -41,3 +41,12 @@ ls -1tr $latestdir/SMP*.npz | tail -1 | while read i ; do
         echo $i    
     fi 
 done 
+source ~/source/tackley-tools/config.ini > /dev/null 2>&1
+
+currdt=$(date +%Y-%m-%d,)
+currhr=$(date +%Y-%m-%d,%H)
+lastcsv=$(ls -1 $LOGDIR/20*.csv | tail -1)
+dailyct=$(egrep "$currdt" $lastcsv | wc -l)
+hourlyct=$(egrep "$currhr" $lastcsv | wc -l)
+/usr/bin/mosquitto_pub -h $BROKER -u $USERNAME -P $PASSWORD -t meteorcams/radiopi/hourly -m $hourlyct
+/usr/bin/mosquitto_pub -h $BROKER -u $USERNAME -P $PASSWORD -t meteorcams/radiopi/daily -m $dailyct
