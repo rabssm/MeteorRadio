@@ -8,9 +8,8 @@ import os
 import glob
 from calendar import monthrange
 
-DATA_DIR = os.path.expanduser(os.path.join(os.getenv('MRDATADIR', default='~'),'radar_data'))
+DATA_DIR = os.path.expanduser('}~radar_data')
 LOG_DIR = os.path.join(DATA_DIR, 'Logs')
-IMG_DIR = os.path.join(DATA_DIR, 'Images')
 CONFIG_FILE = os.path.expanduser('~/.radar_config')
 
 # Main program
@@ -40,19 +39,15 @@ if __name__ == "__main__":
         with open(config_file_name) as fp:
             for cnt, line in enumerate(fp):
                 line_words = (re.split("[: \n]+", line))
-                if line_words[0] == 'country': 
-                    country = line_words[1]
-                if line_words[0] == 'region': 
-                    region = line_words[1]
-                if line_words[0] == 'TxSource': 
-                    tx_source = line_words[1] 
+                if line_words[0] == 'country': country = line_words[1]
+                if line_words[0] == 'region': region = line_words[1]
+                if line_words[0] == 'TxSource': tx_source = line_words[1] 
     except Exception as e:
         print(e)
 
     print("Graphing data for", year, month)
     list_of_files = sorted(glob.glob(os.path.join(LOG_DIR, 'R' + str(year) + '%02d' % month + '*.csv')))
-    if filenames == "":
-        filenames = list_of_files
+    if filenames == "" : filenames = list_of_files
     # print(filenames)
 
 
@@ -60,7 +55,7 @@ if __name__ == "__main__":
     # date_parser = pd.to_datetime
 
     # Collect the data from the RMOB .csv files
-    for filename in filenames:
+    for filename in filenames :
         # df = pd.read_csv(filename, parse_dates={ 'datetime': ['Y', 'M', 'D', 'h', 'm', 's']})
         df = pd.read_csv(filename)
         # df = pd.read_csv(filename, parse_dates={ 'year': ['Y'], 'month': ['M'], 'day': ['D'], 'hour': ['h'], 'minute': ['m'], 'seconds': ['s']})
@@ -86,8 +81,7 @@ if __name__ == "__main__":
 
     months = np.unique(months.to_numpy())
     month_string = ""
-    for month in months: 
-        month_string += (datetime.date(1900, month, 1).strftime('%B') + " ")
+    for month in months : month_string += (datetime.date(1900, month, 1).strftime('%B') + " ")
 
     days = np.unique(days.to_numpy())
     # print(days)
@@ -112,10 +106,8 @@ if __name__ == "__main__":
     # Set the z-max for the colormesh plot based on 3 standard deviations above the mean
     data_mean = np.mean(data_for_mesh)
     data_std = np.std(data_for_mesh)
-    if graph_zlimit == 0:
-        data_vmax = data_mean + (3 * data_std)
-    else: 
-        data_vmax = graph_zlimit
+    if graph_zlimit == 0: data_vmax = data_mean + (3 * data_std)
+    else: data_vmax = graph_zlimit
 
 
     x_range = np.arange(days[0], days[0] + len(days) + 1)
@@ -146,7 +138,7 @@ if __name__ == "__main__":
 
     if save_image:
         image_filename = 'Radio Meteor Detections ' + str(year) + "-" + '%02d' % month
-        plt.savefig(os.path.join(IMG_DIR, image_filename.replace(" ", "_")))
+        plt.savefig(image_filename.replace(" ", "_"))
     else:
         plt.show()
 
