@@ -176,7 +176,8 @@ class MeteorPlotter() :
                 audio_filename = self.create_audio(samples, self.file_name)
                 try :
                     os.system('play -r 37.5k -b 16 -e signed-integer -c 1 ' + audio_file + " sinc 1500-3000 &")
-                except: pass
+                except: 
+                    pass
 
         elif event.key == '+' :
             self.cmap_index += 1
@@ -247,7 +248,7 @@ class MeteorPlotter() :
             ax.set_ylim([np.min(f), np.max(f)])
             # fig.colorbar(qmesh,ax=ax)
             # ax.xaxis.set_major_formatter(fmt)
-            if utc_time:
+            if utc_time :
                 ax.set_xlabel('Time (UTC)' )
                 # fig.autofmt_xdate()
                 # ax.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M:%S'))
@@ -286,8 +287,7 @@ class MeteorPlotter() :
             plt.gca().format_coord = fmt
         ##########################################
 
-        if not noplot : 
-            plt.show(block=len(plt.get_fignums()) < 2)
+        if not noplot : plt.show(block=len(plt.get_fignums()) < 2)
 
 
     def plot_3dspecgram(self, Pxx, f, bins, centre_freq, save_images=False, noplot=False):
@@ -322,7 +322,7 @@ class MeteorPlotter() :
         if not noplot: plt.show(block=False)
 
 
-    def plot_psd(self, Pxx, f, centre_freq):
+    def plot_psd(self, Pxx, f, centre_freq) :
         # Restrict the band for plotting to a band around the required centre frequency
         detection_band = np.where((f*1e6 > (centre_freq - FULL_FREQUENCY_BAND)) & (f*1e6 <= (centre_freq + FULL_FREQUENCY_BAND)))
         X = np.float16(Pxx[detection_band])
@@ -334,14 +334,13 @@ class MeteorPlotter() :
         plt.ylabel('Relative power (dB)')
         plt.ticklabel_format(axis='x', useOffset=False)
 
-        if save_images:
+        if save_images :
             # Save PSD as an image file
             image_filename = DATA_DIR + '/PSD_' + str(int(centre_freq)) + '_' + str(int(sample_rate)) + obs_time.strftime('_%Y%m%d_%H%M%S_%f.png')
             print("Saving", image_filename)
             plt.savefig(image_filename)
 
-        if not noplot: 
-            plt.show(block=False)
+        if not noplot: plt.show(block=False)
 
     def create_audio(self, samples, file_name):
         x7 = samples * (10000 / np.max(np.abs(samples)))
@@ -479,7 +478,7 @@ if __name__ == "__main__":
     if combine :
         obs_times = []
         file_names = file_or_dir
-        for index, file_name in enumerate(file_names):
+        for index, file_name in enumerate(file_names) :
             # Get observation data from file name e.g. SPG_143050000_300000_20210204_222326_281976.npz
             new_obs_time, centre_freq, sample_rate = get_observation_data(file_name)
             obs_times.append(new_obs_time)
@@ -527,7 +526,7 @@ if __name__ == "__main__":
                 new_time_diff = (obs_times[-1] - obs_times[-2]).total_seconds()
 
                 # If the observations don't overlap in time, then break
-                if new_time_diff > new_bins[-1]: break
+                if new_time_diff > new_bins[-1] : break
 
                 # Add the time difference between 1st observation and this observation to the new set of time bins
                 time_diff = (obs_times[-1] - obs_times[0]).total_seconds()
@@ -554,14 +553,14 @@ if __name__ == "__main__":
         # if only one file provided, process it and finish
         filenames = file_or_dir
 
-    if sort_by_ctime: filenames.sort(key=os.path.getctime)
+    if sort_by_ctime : filenames.sort(key=os.path.getctime)
 
     num_smp_files = sum(['SMP' in el for el in filenames])
 
     # Loop through files, displaying plots
-    while file_index < len(filenames):
+    while file_index < len(filenames) :
         filename = filenames[file_index]
-        if os.path.isfile(filename):
+        if os.path.isfile(filename) :
 
             # Get observation data from file name e.g. SPG_143050000_300000_20210204_222326_281976.npz
             obs_time, centre_freq, sample_rate = get_observation_data(filename)
@@ -574,7 +573,7 @@ if __name__ == "__main__":
 
                 # Extract the FFT data. bins is time in seconds, but old format required division by the sample rate
                 bins = npz_data['bins']
-                if sample_rate is not None: bins /= sample_rate
+                if sample_rate is not None : bins /= sample_rate
                 f = npz_data['f']
                 Pxx = npz_data['Pxx']
 
@@ -617,7 +616,5 @@ if __name__ == "__main__":
         file_index += file_index_movement
 
         # Allow the index to be circular
-        if file_index == len(filenames): 
-            file_index = 0
-        elif file_index < 0: 
-            file_index = len(filenames) - 1
+        if file_index == len(filenames) :  file_index = 0
+        elif file_index < 0 : file_index = len(filenames) - 1
