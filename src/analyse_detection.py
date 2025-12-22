@@ -353,7 +353,7 @@ class MeteorPlotter() :
         audio_filename = audio_filename.replace("npz", "raw")
         wav_filename = audio_filename.replace("raw", "wav")
         print("Saving", wav_filename)
-        x7.astype("int16").tofile(audio_filename)
+        x7.real.astype("int16").tofile(audio_filename)
         data = open(audio_filename, 'rb').read()
         with wave.open(wav_filename, 'wb') as out_f:
             out_f.setnchannels(1)
