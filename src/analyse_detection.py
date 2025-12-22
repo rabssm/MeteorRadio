@@ -3,16 +3,14 @@ import datetime
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import matplotlib.patheffects as path_effects
-from matplotlib.mlab import specgram
 import scipy.interpolate as si
 from scipy.signal import ShortTimeFFT
-from scipy.signal.windows import gaussian, hamming
+from scipy.signal.windows import hamming
 import os
 import shutil
 from stat import S_IREAD, S_IRGRP, S_IROTH
 import signal
 import argparse
-import re
 import glob
 from queue import LifoQueue
 import wave
