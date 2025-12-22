@@ -1,13 +1,14 @@
 import re
 import pandas as pd
 import argparse
+from matplotlib import pyplot as plt
 import numpy as np
 import datetime
 import os
 import glob
 from calendar import monthrange
 
-DATA_DIR = os.path.expanduser('~/radar_data')
+DATA_DIR =  os.path.expanduser('~/radar_data')
 LOG_DIR = DATA_DIR + 'Logs/'
 CONFIG_FILE = os.path.expanduser('~/.radar_config')
 
@@ -41,7 +42,7 @@ if __name__ == "__main__":
                 line_words = (re.split("[: \n]+", line))
                 if line_words[0] == 'country' : country = line_words[1]
                 if line_words[0] == 'region' : region = line_words[1]
-                if line_words[0] == 'TxSource' : tx_source = line_words[1]
+                if line_words[0] == 'TxSource' : tx_source = line_words[1] 
                 # if line_words[0] == 'observer' : observer_name = line_words[1] 
     except Exception as e:
         print(e)
@@ -73,8 +74,7 @@ if __name__ == "__main__":
 
     months = np.unique(months.to_numpy())
     month_string = ""
-    for month in months: 
-        month_string += (datetime.date(1900, month, 1).strftime('%B') + " ")
+    for month in months : month_string += (datetime.date(1900, month, 1).strftime('%B') + " ")
 
     days = np.unique(days.to_numpy())
     hours = np.unique(hours.to_numpy())
@@ -108,8 +108,7 @@ if __name__ == "__main__":
 
     # Create the top line of the file
     top_line = filename_date.strftime("%b").lower() + "|"
-    for hour in range(0, 24): 
-        top_line += (" %02dh|" % (hour))
+    for hour in range(0, 24): top_line += (" %02dh|" % (hour))
     file.write(top_line + "\n")
 
     # Find missing days from missing log files
@@ -121,8 +120,8 @@ if __name__ == "__main__":
         out_line = " %02d|" %(index)
         for hour in range(0, 24) :
             # If there are missing days, or no data on some days, set "???""
-            if index in missing_days or index > monthrange(year, month)[1]: out_line += "??? |"
-            elif datetime.datetime(year, month, index, hour) > datetime.datetime.now(): out_line += "??? |"
+            if index in missing_days or index > monthrange(year, month)[1] : out_line += "??? |"
+            elif datetime.datetime(year, month, index, hour) > datetime.datetime.now() : out_line += "??? |"
 
             else:
                 try: 
