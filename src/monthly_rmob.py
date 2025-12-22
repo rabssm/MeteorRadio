@@ -8,7 +8,7 @@ import os
 import glob
 from calendar import monthrange
 
-DATA_DIR =  os.path.expanduser('~/radar_data')
+DATA_DIR =  os.path.expanduser('~/radar_data/')
 LOG_DIR = DATA_DIR + 'Logs/'
 CONFIG_FILE = os.path.expanduser('~/.radar_config')
 
@@ -44,7 +44,7 @@ if __name__ == "__main__":
                 if line_words[0] == 'region' : region = line_words[1]
                 if line_words[0] == 'TxSource' : tx_source = line_words[1] 
                 # if line_words[0] == 'observer' : observer_name = line_words[1] 
-    except Exception as e:
+    except Exception as e :
         print(e)
 
     print("Getting data for", year, month, "from", log_dir)

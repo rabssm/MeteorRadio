@@ -8,7 +8,7 @@ import os
 import glob
 from calendar import monthrange
 
-DATA_DIR = os.path.expanduser('~/radar_data')
+DATA_DIR =  os.path.expanduser('~/radar_data/')
 LOG_DIR = DATA_DIR + 'Logs/'
 CONFIG_FILE = os.path.expanduser('~/.radar_config')
 
@@ -42,11 +42,11 @@ if __name__ == "__main__":
                 if line_words[0] == 'country' : country = line_words[1]
                 if line_words[0] == 'region' : region = line_words[1]
                 if line_words[0] == 'TxSource' : tx_source = line_words[1] 
-    except Exception as e:
+    except Exception as e :
         print(e)
 
     print("Graphing data for", year, month)
-    list_of_files = sorted(glob.glob(LOG_DIR ~ 'R' + str(year) + '%02d' % month + '*.csv'))
+    list_of_files = sorted(glob.glob(LOG_DIR + 'R' + str(year) + '%02d' % month + '*.csv'))
     if filenames == "" : filenames = list_of_files
     # print(filenames)
 
@@ -106,7 +106,8 @@ if __name__ == "__main__":
     # Set the z-max for the colormesh plot based on 3 standard deviations above the mean
     data_mean = np.mean(data_for_mesh)
     data_std = np.std(data_for_mesh)
-    if graph_zlimit == 0 : data_vmax = data_mean + (3 * data_std)
+    if graph_zlimit == 0 : 
+        data_vmax = data_mean + (3 * data_std)
     else : data_vmax = graph_zlimit
 
 
