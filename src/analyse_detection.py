@@ -370,7 +370,7 @@ class MeteorPlotter() :
 
 
 def get_observation_data(filename):
-    splits = filename.split('_')
+    splits = os.path.basename(filename).split('_')
     centre_freq = float(splits[1])
     if len(splits)> 5:
         sample_rate = int(splits[2])
