@@ -20,11 +20,10 @@ import wave
 
 FULL_FREQUENCY_BAND = 18000   # Band for psd plot is +/- 18000 Hz
 SPECGRAM_BAND = 500     # Band for displaying specgram plots is +/-500
-DATA_DIR = os.path.expanduser('~/radar_data')
-ARCHIVE_DIR = os.path.join(DATA_DIR, 'Archive')
-CAPTURE_DIR = os.path.join(DATA_DIR, 'Captures')
-JUNK_DIR = os.path.join(DATA_DIR, 'Junk')
-
+DATA_DIR =  os.path.expanduser('~/radar_data')
+ARCHIVE_DIR =  os.path.expanduser('~/radar_data/Archive')
+CAPTURE_DIR =  os.path.expanduser('~/radar_data/Captures')
+JUNK_DIR =  os.path.expanduser('~/radar_data/Junk')
 OVERLAP = 0.75           # Overlap (0.75 is 75%)
 
 NUM_FFT = 2**12
@@ -49,11 +48,11 @@ HELP_TEXT = 'Command keys:\n' + \
     'q              Close current plot\n' + \
     'Esc            Exit viewer'
 
-def signalHandler(signum, frame):
+def signalHandler (signum, frame) :
     os._exit(0)
 
 # Create all necessary data directories
-def make_directories():
+def make_directories() :
     os.makedirs(DATA_DIR, exist_ok=True)
     os.makedirs(ARCHIVE_DIR, exist_ok=True)
     os.makedirs(CAPTURE_DIR, exist_ok=True)
@@ -121,7 +120,7 @@ class MeteorPlotter() :
         # Move data and audio file to Junk folder. Backspace key moves back to previous file
         elif event.key == 'delete' or event.key == 'backspace':
             try:
-                if event.key == 'backspace': file_index_movement = -1
+                if event.key == 'backspace' : file_index_movement = -1
                 else: file_index_movement = 1
                 shutil.move(self.file_name, JUNK_DIR + '/' + os.path.basename(self.file_name))
                 self.last_deleted_file_queue.put_nowait(self.file_name)
@@ -156,13 +155,12 @@ class MeteorPlotter() :
         elif event.key == 'pageup':
             file_index_movement = -10
             plt.close()
-        elif event.key == 'S' :                # S key saves current plot to image
+        elif event.key == 'S' :                 # S key saves current plot to image
             try:
                 image_filename = DATA_DIR + "/" + os.path.basename(self.file_name.replace("npz", "png"))
                 print("Saving", image_filename)
                 plt.savefig(image_filename)
-            except:
-                pass
+            except: pass
 
         # 0 key plays the audio file and converts to a wav file to allow analysis using audacity
         elif event.key == '0':
@@ -194,7 +192,7 @@ class MeteorPlotter() :
             file_index_movement = 0
             plt.close()
 
-        elif event.key == 'f1 ':
+        elif event.key == 'f1' :
             self.help()
 
         elif event.key == 'm' :
@@ -223,7 +221,7 @@ class MeteorPlotter() :
         mn, sigmax, init_freq, peak_freq, snr = get_capture_stats(Pxx, f, bins)
 
         # Convert the plot data to dB
-        _ = np.float16(Pxx)
+        X = np.float16(Pxx)
         Pxx = 10.0*np.log10(Pxx)
 
         # bins += (obs_time.second + (obs_time.microsecond/1e6))
@@ -244,13 +242,13 @@ class MeteorPlotter() :
             ax.pcolormesh(bins, f, Pxx, cmap=self.cmap_color, shading='auto')
             ax.set_title('Meteor Radio Detection  ' + str(obs_time)[:-3] + '\n' + stats_string, fontsize=10)
             ax.set_ylabel('Frequency (Hz) around ' + str(centre_freq/1e6) + ' MHz')
-            ax.set_xlabel('Time (s)')
+            ax.set_xlabel('Time (s)' )
             ax.ticklabel_format(axis='y', useOffset=False)
             ax.set_ylim([np.min(f), np.max(f)])
             # fig.colorbar(qmesh,ax=ax)
             # ax.xaxis.set_major_formatter(fmt)
             if utc_time:
-                ax.set_xlabel('Time (UTC)')
+                ax.set_xlabel('Time (UTC)' )
                 # fig.autofmt_xdate()
                 # ax.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M:%S'))
                 plt.xticks(rotation = 30)
@@ -260,7 +258,7 @@ class MeteorPlotter() :
             ax.pcolormesh(f, bins, Pxx.T, cmap=self.cmap_color, shading='auto')
             ax.set_title('Meteor Radio Detection  ' + str(obs_time)[:-3] + '\n' + stats_string, fontsize=10)
             ax.set_xlabel('Frequency (Hz) around ' + str(centre_freq/1e6) + ' MHz')
-            ax.set_ylabel('Time (s)')
+            ax.set_ylabel('Time (s)' )
             ax.ticklabel_format(axis='x', useOffset=False)
             ax.set_xlim([np.min(f), np.max(f)])
             # fig.colorbar(qmesh,ax=ax)
@@ -282,7 +280,6 @@ class MeteorPlotter() :
         #### Displays Z value of mouse cursor ####
         if not utc_time :
             func = si.RectBivariateSpline(bins, f, Pxx.T)
-
             def fmt(x, y):
                 z = np.take(func(x, y), 0)
                 return 'x={x:.5f}  y={y:.5f}  z={z:.5f}'.format(x=x, y=y, z=z)
@@ -306,9 +303,9 @@ class MeteorPlotter() :
         # ax = fig.gca(projection='3d')
         f -= (centre_freq/1e6)
         f *= 1e6
-        ax.plot_surface(bins[None,:], f[:, None], 10.0*np.log10(Pxx), cmap='coolwarm')
+        ax.plot_surface(bins[None, :], f[:, None], 10.0*np.log10(Pxx), cmap='coolwarm')
         plt.title('Meteor Radio Detection  ' + str(obs_time)[:-3], y=1.08)
-        ax.set_xlabel('Time (s)')
+        ax.set_xlabel('Time (s)' )
         ax.set_ylabel('Frequency (Hz) around ' + str(centre_freq/1e6) + ' MHz')
         ax.set_zlabel('Relative power (dB)')
         # ax.view_init(30, 135)
@@ -322,8 +319,7 @@ class MeteorPlotter() :
             print("Saving", image_filename)
             plt.savefig(image_filename)
 
-        if not noplot: 
-            plt.show(block=False)
+        if not noplot: plt.show(block=False)
 
 
     def plot_psd(self, Pxx, f, centre_freq):
