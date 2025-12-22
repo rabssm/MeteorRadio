@@ -106,7 +106,7 @@ if __name__ == "__main__":
     # Set the z-max for the colormesh plot based on 3 standard deviations above the mean
     data_mean = np.mean(data_for_mesh)
     data_std = np.std(data_for_mesh)
-    if graph_zlimit == 0 : 
+    if graph_zlimit == 0 :
         data_vmax = data_mean + (3 * data_std)
     else : data_vmax = graph_zlimit
 
