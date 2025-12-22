@@ -568,7 +568,7 @@ if __name__ == "__main__":
             # Get observation data from file name e.g. SPG_143050000_300000_20210204_222326_281976.npz
             obs_time, centre_freq, sample_rate = get_observation_data(filename)
             meteor_plotter.set_file_name(filename)
-
+            meteor_plotter.set_colour(colour_scheme)
             # If this is specgram data, plot the spectrogram only
             if 'SPG' in filename and 'npz' in filename :
                 # Get the np data from file
