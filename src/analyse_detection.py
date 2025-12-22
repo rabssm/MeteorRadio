@@ -160,7 +160,7 @@ class MeteorPlotter() :
                 image_filename = DATA_DIR + "/" + os.path.basename(self.file_name.replace("npz", "png"))
                 print("Saving", image_filename)
                 plt.savefig(image_filename)
-            except: 
+            except:
                 pass
 
         # 0 key plays the audio file and converts to a wav file to allow analysis using audacity
@@ -175,7 +175,7 @@ class MeteorPlotter() :
 
             else:
                 audio_filename = self.create_audio(samples, self.file_name)
-                try :
+                try:
                     os.system('play -r 37.5k -b 16 -e signed-integer -c 1 ' + audio_file + " sinc 1500-3000 &")
                 except: 
                     pass
@@ -608,7 +608,7 @@ if __name__ == "__main__":
                     meteor_plotter.plot_specgram(Pxx, f, bins, centre_freq, obs_time, flipped=False, save_images=True, noplot=True)
                     if show_3d: 
                         meteor_plotter.plot_3dspecgram(Pxx, f, bins, centre_freq, save_images=True, noplot=True)
-                    if file_index == num_smp_files-1:
+                    if file_index == num_smp_files-1 :
                         os._exit(0)
                 else:
                     meteor_plotter.plot_specgram(Pxx, f, bins, centre_freq, obs_time, flipped=False)
@@ -617,5 +617,5 @@ if __name__ == "__main__":
         file_index += file_index_movement
 
         # Allow the index to be circular
-        if file_index == len(filenames) :  file_index = 0
+        if file_index == len(filenames) : file_index = 0
         elif file_index < 0 : file_index = len(filenames) - 1
