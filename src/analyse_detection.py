@@ -160,7 +160,8 @@ class MeteorPlotter() :
                 image_filename = DATA_DIR + "/" + os.path.basename(self.file_name.replace("npz", "png"))
                 print("Saving", image_filename)
                 plt.savefig(image_filename)
-            except: pass
+            except: 
+                pass
 
         # 0 key plays the audio file and converts to a wav file to allow analysis using audacity
         elif event.key == '0':
@@ -168,7 +169,7 @@ class MeteorPlotter() :
             if 'SMP' in self.file_name and 'npz' in self.file_name :
                 # Scale samples to adjust volume
                 audio_filename = self.create_audio(samples, self.file_name)
-                try:
+                try :
                     os.system('play -r 37.5k -b 16 -e signed-integer -c 1 ' + audio_filename + " sinc 1500-3000 &")
                 except: pass
 
@@ -287,7 +288,7 @@ class MeteorPlotter() :
             plt.gca().format_coord = fmt
         ##########################################
 
-        if not noplot : plt.show(block=len(plt.get_fignums()) < 2)
+        if not noplot: plt.show(block=len(plt.get_fignums()) < 2)
 
 
     def plot_3dspecgram(self, Pxx, f, bins, centre_freq, save_images=False, noplot=False):
