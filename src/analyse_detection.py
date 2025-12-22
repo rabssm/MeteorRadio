@@ -437,6 +437,7 @@ if __name__ == "__main__":
     # ap.add_argument("-f", "--frequency", type=float, default=143.05e6, help="Centre frequency")
     # ap.add_argument("-r", "--rate", type=int, default=960000, help="Sample rate")
     ap.add_argument("-3", "--3d", action='store_true', help="Show 3d specgram")
+    ap.add_argument("-a", "--audio", action='store_true', help="Create audio file")
 
     args = vars(ap.parse_args())
 
@@ -452,6 +453,7 @@ if __name__ == "__main__":
     # sample_rate = args['rate']
     # centre_freq = args['frequency']
     show_3d = args['3d']
+    audio = args['audio']
 
     # Print command key help
     print(HELP_TEXT)
@@ -605,9 +607,12 @@ if __name__ == "__main__":
 
                 if save_images :
                     meteor_plotter.set_file_name(filename)
+                    meteor_plotter.set_colour(colour_scheme)
                     meteor_plotter.plot_specgram(Pxx, f, bins, centre_freq, obs_time, flipped=False, save_images=True, noplot=True)
                     if show_3d: 
                         meteor_plotter.plot_3dspecgram(Pxx, f, bins, centre_freq, save_images=True, noplot=True)
+                    if audio:
+                        meteor_plotter.create_audio(samples, filename)
                     if file_index == num_smp_files-1 :
                         os._exit(0)
                 else:
