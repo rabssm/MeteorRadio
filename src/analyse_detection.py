@@ -3,18 +3,17 @@ import datetime
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import matplotlib.patheffects as path_effects
-from matplotlib.mlab import specgram
 import scipy.interpolate as si
 from scipy.signal import ShortTimeFFT
-from scipy.signal.windows import gaussian, hamming
+from scipy.signal.windows import hamming
 import os
 import shutil
 from stat import S_IREAD, S_IRGRP, S_IROTH
 import signal
 import argparse
-import re
 import glob
 from queue import LifoQueue
+import wave
 
 
 FULL_FREQUENCY_BAND = 18000   # Band for psd plot is +/- 18000 Hz
@@ -23,7 +22,6 @@ DATA_DIR =  os.path.expanduser('~/radar_data')
 ARCHIVE_DIR =  os.path.expanduser('~/radar_data/Archive')
 CAPTURE_DIR =  os.path.expanduser('~/radar_data/Captures')
 JUNK_DIR =  os.path.expanduser('~/radar_data/Junk')
-
 OVERLAP = 0.75           # Overlap (0.75 is 75%)
 
 NUM_FFT = 2**12
@@ -49,7 +47,7 @@ HELP_TEXT = 'Command keys:\n' + \
     'Esc            Exit viewer'
 
 def signalHandler (signum, frame) :
-   os._exit(0)
+    os._exit(0)
 
 # Create all necessary data directories
 def make_directories() :
@@ -67,6 +65,9 @@ class MeteorPlotter() :
         self.cmap_index = self.cmap_color_list.index(self.cmap_color)
         self.last_deleted_file_queue = LifoQueue()
         self.file_name = ''
+
+    def set_colour(self, scheme) :
+        self.cmap_color = scheme
 
     def set_file_name(self, file_name) :
         self.file_name = file_name
@@ -165,29 +166,16 @@ class MeteorPlotter() :
             # If the file is a raw sample file
             if 'SMP' in self.file_name and 'npz' in self.file_name :
                 # Scale samples to adjust volume
-                x7 = samples * (10000 / np.max(np.abs(samples)))
-
-                # Save to file as 16-bit signed single-channel audio samples
-                # Note that we can throw away the imaginary part of the IQ sample data for USB
-                audio_filename = self.file_name.replace("SMP", "AUD")
-                audio_filename = audio_filename.replace("npz", "raw")
-                wav_filename = audio_filename.replace("raw", "wav")
-                print("Saving", audio_filename)
-                x7.astype("int16").tofile(audio_filename)
-
+                audio_filename = self.create_audio(samples, self.file_name)
                 try :
                     os.system('play -r 37.5k -b 16 -e signed-integer -c 1 ' + audio_filename + " sinc 1500-3000 &")
-                    os.system('sox -r 37.5k -b 16 -e signed-integer -c 1 ' + audio_filename + " " + wav_filename + " &")
                 except: pass
 
             else:
+                audio_filename = self.create_audio(samples, self.file_name)
                 try:
-                    audio_file = self.file_name.replace("SPG", "AUD")
-                    audio_file = audio_file.replace("npz", "raw")
-                    wav_file = audio_file.replace("raw", "wav")
                     os.system('play -r 37.5k -b 16 -e signed-integer -c 1 ' + audio_file + " sinc 1500-3000 &")
-                    os.system('sox -r 37.5k -b 16 -e signed-integer -c 1 ' + audio_file + " " + wav_file + " &")
-                except:
+                except: 
                     pass
 
         elif event.key == '+' :
@@ -301,7 +289,7 @@ class MeteorPlotter() :
         if not noplot: plt.show(block=len(plt.get_fignums()) < 2)
 
 
-    def plot_3dspecgram(self, Pxx, f, bins, centre_freq) :
+    def plot_3dspecgram(self, Pxx, f, bins, centre_freq, save_images=False, noplot=False):
 
         # Limit the data to the narrow frequency band
         freq_slice = np.where((f >= (centre_freq-SPECGRAM_BAND)/1e6) & (f <= (centre_freq+SPECGRAM_BAND)/1e6))
@@ -353,6 +341,26 @@ class MeteorPlotter() :
 
         if not noplot: plt.show(block=False)
 
+    def create_audio(self, samples, file_name):
+        x7 = samples * (10000 / np.max(np.abs(samples)))
+
+        # Save to file as 16-bit signed single-channel audio samples
+        # Note that we can throw away the imaginary part of the IQ sample data for USB
+        if 'SMP' in file_name:
+            audio_filename = file_name.replace("SMP", "AUD")
+        else:
+            audio_filename = file_name.replace("SPG", "AUD")
+        audio_filename = audio_filename.replace("npz", "raw")
+        wav_filename = audio_filename.replace("raw", "wav")
+        print("Saving", wav_filename)
+        x7.real.astype("int16").tofile(audio_filename)
+        data = open(audio_filename, 'rb').read()
+        with wave.open(wav_filename, 'wb') as out_f:
+            out_f.setnchannels(1)
+            out_f.setsampwidth(2)
+            out_f.setframerate(44100)
+            out_f.writeframesraw(data)
+        return audio_filename
 
     def plot_hist(self, Pxx) :
 
@@ -361,23 +369,22 @@ class MeteorPlotter() :
         plt.show(block=False)
 
 
-def get_observation_data(filename) :
-    m = re.search('_(\d+)_(\d+)_(\d+)_(\d+)_(\d+)', filename, re.IGNORECASE)
-    if m is None :
-        m = re.search('_(\d+)_(\d+)_(\d+)_(\d+)', filename, re.IGNORECASE)
-
-    i = 1
-    if m is not None :
-        centre_freq = float(m.group(i)) ; i+=1
-        if len(m.groups()) == 5 : sample_rate = int(m.group(i)) ; i+=1
-        else: sample_rate = None
-        obs_date = m.group(i) ; i+=1
-        obs_time = m.group(i) ; i+=1
-        obs_timefrac = m.group(i) ; i+=1
-        obs_time = datetime.datetime.strptime(obs_date + '_' + obs_time + '_' + obs_timefrac, '%Y%m%d_%H%M%S_%f')
-        print("Observation time", obs_time, "Frequency", centre_freq, "Sample rate", sample_rate)
-
-        return obs_time, centre_freq, sample_rate
+def get_observation_data(filename):
+    splits = os.path.basename(filename).split('_')
+    centre_freq = float(splits[1])
+    if len(splits)> 5:
+        sample_rate = int(splits[2])
+        obs_date = splits[3]
+        obs_time = splits[4]
+        obs_timefrac = splits[5].split('.')[0]
+    else:
+        sample_rate = None
+        obs_date = splits[2]
+        obs_time = splits[3]
+        obs_timefrac = splits[4].split('.')[0]
+    obs_time = datetime.datetime.strptime(obs_date + '_' + obs_time + '_' + obs_timefrac, '%Y%m%d_%H%M%S_%f')
+    print("Observation time", obs_time, "Frequency", centre_freq, "Sample rate", sample_rate)
+    return obs_time, centre_freq, sample_rate
 
 
 def get_capture_stats(Pxx, f, bins) :
@@ -424,9 +431,11 @@ if __name__ == "__main__":
     ap.add_argument("-t", "--sortbyctime", action='store_true', help="View files sorted by ctime")
     ap.add_argument("--timeres", action='store_true', help="Display for best time resolution")
     ap.add_argument("--headecho", action='store_true', help="Display for head acho analysis")
+    ap.add_argument("--colour", type=str, default="gist_heat", help="Colour Scheme")
     # ap.add_argument("-f", "--frequency", type=float, default=143.05e6, help="Centre frequency")
     # ap.add_argument("-r", "--rate", type=int, default=960000, help="Sample rate")
-    # ap.add_argument("-3", "--3d", action='store_true', help="Show 3d specgram")
+    ap.add_argument("-3", "--3d", action='store_true', help="Show 3d specgram")
+    ap.add_argument("-a", "--audio", action='store_true', help="Create audio file")
 
     args = vars(ap.parse_args())
 
@@ -437,10 +446,12 @@ if __name__ == "__main__":
     sort_by_ctime = args['sortbyctime']
     time_res = args['timeres']
     headecho_res = args['headecho']
+    colour_scheme = args['colour']
     
     # sample_rate = args['rate']
     # centre_freq = args['frequency']
-    # show_3d = args['3d']
+    show_3d = args['3d']
+    audio = args['audio']
 
     # Print command key help
     print(HELP_TEXT)
@@ -528,6 +539,7 @@ if __name__ == "__main__":
 
         obs_time = obs_times[0]
         meteor_plotter.set_file_name(file_names[0])
+        meteor_plotter.set_colour(colour_scheme)
         meteor_plotter.plot_specgram(Pxx, f, bins, centre_freq, obs_time, flipped=False, utc_time=True)
 
         os._exit(0)
@@ -539,14 +551,8 @@ if __name__ == "__main__":
         dirname = file_or_dir[0]
         filenames = sorted(glob.glob(dirname + '/*.npz'))
     else:
+        # if only one file provided, process it and finish
         filenames = file_or_dir
-        if len(filenames) == 1 :
-            dirname = os.path.dirname(filenames[0])
-            npz_filenames = sorted(glob.glob(dirname + '/*.npz'), reverse=False)
-            if len(npz_filenames) > 1 :
-                # npz_filenames = list(dict.fromkeys(npz_filenames))    # Ensure filename list is unique
-                file_index = npz_filenames.index(filenames[0])
-                filenames = npz_filenames
 
     if sort_by_ctime : filenames.sort(key=os.path.getctime)
 
@@ -560,7 +566,7 @@ if __name__ == "__main__":
             # Get observation data from file name e.g. SPG_143050000_300000_20210204_222326_281976.npz
             obs_time, centre_freq, sample_rate = get_observation_data(filename)
             meteor_plotter.set_file_name(filename)
-
+            meteor_plotter.set_colour(colour_scheme)
             # If this is specgram data, plot the spectrogram only
             if 'SPG' in filename and 'npz' in filename :
                 # Get the np data from file
@@ -599,7 +605,12 @@ if __name__ == "__main__":
 
                 if save_images :
                     meteor_plotter.set_file_name(filename)
+                    meteor_plotter.set_colour(colour_scheme)
                     meteor_plotter.plot_specgram(Pxx, f, bins, centre_freq, obs_time, flipped=False, save_images=True, noplot=True)
+                    if show_3d: 
+                        meteor_plotter.plot_3dspecgram(Pxx, f, bins, centre_freq, save_images=True, noplot=True)
+                    if audio:
+                        meteor_plotter.create_audio(samples, filename)
                     if file_index == num_smp_files-1 :
                         os._exit(0)
                 else:
@@ -611,4 +622,3 @@ if __name__ == "__main__":
         # Allow the index to be circular
         if file_index == len(filenames) : file_index = 0
         elif file_index < 0 : file_index = len(filenames) - 1
-
