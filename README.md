@@ -65,13 +65,13 @@ Audio and FFT detection files are about 800 kB in size.
 #### Radio Tuning
 The software tunes the USB software radio to a central frequency 2 kHz below the required frequency. This is so that a meteor detection yields an approximately 2 kHz audible tone on the upper sideband. The default frequency for radio meteor detection is the frequency of the GRAVES transmitter 143.05 MHz. The required frequency can be changed using the -f option.
 
-Many SDR's have a tuning frequency error. While this may only be an offset error of 100 Hz or so, and since the detection band is quite narrow (-120 to +120 Hz), it could impact on whether the system can get any detections. The --detectionband can be used to extend the range of frequencies, or to move the detection band dependent upon the offset error of the SDR. For example:
+Many SDR's have a tuning frequency error. While this may only be an offset error of 100 Hz or so, and since the detection band is quite narrow (-120 to +120 Hz), it could impact on whether the system can get any detections. The --detectionband command line option can be used to extend the range of frequencies, or to move the detection band dependent upon the offset error of the SDR. For example, add the option to the normal command used to start detecting meteor radio data:
 
 ```
 # Widen the detection band to +/- 200 Hz either side of the central frequency (e.g. GRAVES 143.05 MHz)
 --detectionband -200 +200
-# Lower the detection band by 100 Hz to -220 to +20 Hz
---detectionband  -220 20
+# Lower the detection band by 100 Hz to -220 to +20 Hz (e.g. if the SDR has an offset error of -100 Hz)
+--detectionband -220 20
 ```
 
 #### Resource Usage and Performance
