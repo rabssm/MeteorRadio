@@ -585,8 +585,7 @@ class SampleAnalyser(threading.Thread):
         sft = ShortTimeFFT(window, hop=HOP, fs=self.sdr_sample_rate, mfft=NUM_FFT, fft_mode='centered')
         Pxx = sft.spectrogram(raw_samples)
 
-        T_x, N = HOP / sample_rate, Pxx.shape[1]
-        bins = np.arange(N) * T_x
+        bins = sft.t(len(raw_samples))
 
         f = sft.f
         f = f/1e6 + self.sdr_freq_mhz
@@ -605,24 +604,24 @@ class SampleAnalyser(threading.Thread):
     def save_fft(self, samples_forspecgram, sda_centre_freq, centre_freq, sample_rate, obs_time) :
 
         # Create the specgram
-        if self.decimate_before_saving :
+        if self.decimate_before_saving:
             decimated_samples = scipy_signal.decimate(samples_forspecgram, DECIMATION)
             # Pxx, f, bins = specgram(decimated_samples, NFFT=int(NUM_FFT/DECIMATION), Fs=self.decimated_sample_rate/1e6, noverlap=int(OVERLAP*(NUM_FFT/DECIMATION)))
-            window = hamming(int(NUM_FFT/DECIMATION), sym=True)  # symmetric Gaussian window
-            sft = ShortTimeFFT(window, hop=HOP, fs=self.sdr_sample_rate, mfft=int(NUM_FFT/DECIMATION), fft_mode='centered')
+            window = hamming(NUM_FFT/DECIMATION, sym=True)  # symmetric Gaussian window
+            sft = ShortTimeFFT(window, hop=HOP, fs=self.sdr_sample_rate, mfft=NUM_FFT/DECIMATION, fft_mode='centered')
             Pxx = sft.spectrogram(decimated_samples)
             f = sft.f
+            bins = sft.t(len(decimated_samples))
 
         else:
             window = hamming(NUM_FFT, sym=True)  # symmetric Gaussian window
             sft = ShortTimeFFT(window, hop=HOP, fs=self.sdr_sample_rate, mfft=NUM_FFT, fft_mode='centered')
             Pxx = sft.spectrogram(samples_forspecgram)
             f = sft.f
+            bins = sft.t(len(samples_forspecgram))
 
         f = f/1e6 + self.sdr_freq_mhz
         
-        T_x, N = HOP / sample_rate, Pxx.shape[1]
-        bins = np.arange(N) * T_x
 
         # Restrict the band for saving to a band around the required centre frequency
         freq_slice = np.where((f >= (centre_freq-COMPRESSION_FREQUENCY_BAND)/1e6) & (f <= (centre_freq+COMPRESSION_FREQUENCY_BAND)/1e6))
