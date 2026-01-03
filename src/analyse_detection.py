@@ -358,7 +358,7 @@ class MeteorPlotter() :
         with wave.open(wav_filename, 'wb') as out_f:
             out_f.setnchannels(1)
             out_f.setsampwidth(2)
-            out_f.setframerate(44100)
+            out_f.setframerate(DEFAULT_SAMPLE_RATE)
             out_f.writeframesraw(data)
         return audio_filename
 
@@ -378,7 +378,7 @@ def get_observation_data(filename):
         obs_time = splits[4]
         obs_timefrac = splits[5].split('.')[0]
     else:
-        sample_rate = None
+        sample_rate = DEFAULT_SAMPLE_RATE
         obs_date = splits[2]
         obs_time = splits[3]
         obs_timefrac = splits[4].split('.')[0]
@@ -597,9 +597,7 @@ if __name__ == "__main__":
                 sft = ShortTimeFFT(window, hop=HOP, fs=sample_rate, mfft=NUM_FFT, fft_mode='centered')
                 Pxx = sft.spectrogram(samples)
 
-                T_x, N = HOP / sample_rate, Pxx.shape[1]
-                bins = np.arange(N) * T_x
-
+                bins = sft.t(len(samples))
                 f = sft.f
                 f = (f + centre_freq - 2000) / 1e6
 
