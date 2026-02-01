@@ -67,79 +67,98 @@ if __name__ == "__main__":
     result = pd.concat(frames)
     # print(result)
 
-    # Get dates and hours from data frames
-    days = result['D']
-    hours = result['h']
-    months = result['M']
-    years = result['Y']
+    # ------------------------------------------------------------
+    # Build a complete (day × hour) grid for the whole month
+    # ------------------------------------------------------------
 
-    data = result.groupby(["D", "h"]).size().unstack(fill_value=0).stack()
-    pd.set_option("display.max_rows", None, "display.max_columns", None)
-    # print(data)
+    days_in_month = monthrange(year, month)[1]
+    all_days = np.arange(1, days_in_month + 1)
+    all_hours = np.arange(0, 24)
 
-    year = np.unique(years.to_numpy())[0]
-
-    months = np.unique(months.to_numpy())
-    month_string = ""
-    for month in months : month_string += (datetime.date(1900, month, 1).strftime('%B') + " ")
-
-    days = np.unique(days.to_numpy())
-    # print(days)
-    hours = np.unique(hours.to_numpy())
-
+    # Group data and reindex to include missing days/hours
+    data = (
+        result
+        .groupby(["D", "h"])
+        .size()
+        .unstack(fill_value=0)
+        .reindex(index=all_days, columns=all_hours, fill_value=0)
+    )
 
     data_for_mesh = data.to_numpy()
-    data_for_mesh = np.reshape(data_for_mesh, (len(days), len(hours)))
 
-    # Find missing days from missing log files
-    missing_days = set(range(1, monthrange(year, month)[1])) - set(days)
-    print("Missing days", missing_days)
+    # ------------------------------------------------------------
+    # Z-axis scaling
+    # ------------------------------------------------------------
 
-    zeros_row = np.zeros((1, 24))
-    print(zeros_row.shape)
-    # data_for_mesh = np.insert(data_for_mesh, 3, zeros_row, 0)
-
-    print(data_for_mesh, data_for_mesh.shape)
-
-
-
-    # Set the z-max for the colormesh plot based on 3 standard deviations above the mean
     data_mean = np.mean(data_for_mesh)
     data_std = np.std(data_for_mesh)
-    if graph_zlimit == 0 :
+
+    if graph_zlimit == 0:
         data_vmax = data_mean + (3 * data_std)
-    else : data_vmax = graph_zlimit
+    else:
+        data_vmax = graph_zlimit
 
+    # ------------------------------------------------------------
+    # Plot
+    # ------------------------------------------------------------
 
-    x_range = np.arange(days[0], days[0] + len(days) + 1)
-    y_range = np.arange(hours[0], hours[0] + len(hours) + 1)
+    x_range = np.arange(1, days_in_month + 2)   # +1 for pcolormesh edges
+    y_range = np.arange(0, 25)                  # 24 hours + edge
 
-    print(x_range, y_range)
-
-    fig = plt.figure(figsize=(12,9))
+    fig = plt.figure(figsize=(12, 9))
     ax = fig.add_subplot(111)
     ax.set_facecolor('0.0')
-    ax.set_title('Radio Meteor Detections ' + str(days[0]) + "-" + str(days[-1]) + " " + str(month_string) + str(year) + " (" + tx_source + " -> " + region + " " + country + ")\n", fontsize=16)
-    qmesh = ax.pcolormesh(x_range, y_range, data_for_mesh.transpose(), cmap='gnuplot', vmin=0, vmax=data_vmax)  # jet and terrain look good too
-    colour_bar = fig.colorbar(qmesh,ax=ax)
+
+    ax.set_title(
+        f"Radio Meteor Detections 1–{days_in_month} "
+        f"{datetime.date(1900, month, 1).strftime('%B')} {year} "
+        f"({tx_source} → {region} {country})\n",
+        fontsize=16
+    )
+
+    qmesh = ax.pcolormesh(
+        x_range,
+        y_range,
+        data_for_mesh.T,
+        cmap='gnuplot',
+        vmin=0,
+        vmax=data_vmax
+    )
+
+    colour_bar = fig.colorbar(qmesh, ax=ax)
     colour_bar.set_label("Hourly Meteor Count")
-    # ax.axis('tight')
+
     ax.set_xlabel("Day of month")
     ax.set_ylabel("Hour of day (UT)")
-    plt.gca().invert_yaxis()
-    plt.xticks(np.arange(1, monthrange(year, month)[1]+1))
+    ax.set_xticks(all_days)
+    ax.set_yticks(all_hours)
+    ax.invert_yaxis()
 
-    # Loop over data dimensions and create text annotations.
-    for i in range(len(days)):
-        for j in range(len(hours)):
-            text = ax.text(i+days[0]+0.2, j+0.8, data_for_mesh[i, j], ha="left", va="bottom", color="black", fontsize=8)
+    # ------------------------------------------------------------
+    # Cell annotations
+    # ------------------------------------------------------------
 
-    # Limit values
-    # data_for_mesh[data_for_mesh > 60] = 60
+    for day_idx, day in enumerate(all_days):
+        for hour_idx, hour in enumerate(all_hours):
+            value = data_for_mesh[day_idx, hour_idx]
+            if value > 0:
+                ax.text(
+                    day + 0.1,
+                    hour + 0.8,
+                    value,
+                    ha="left",
+                    va="bottom",
+                    fontsize=8,
+                    color="black"
+                )
 
-    if save_image :
-        image_filename = 'Radio Meteor Detections ' + str(year) + "-" + '%02d' % month
-        plt.savefig(image_filename.replace(" ", "_"))
+    # ------------------------------------------------------------
+    # Output
+    # ------------------------------------------------------------
+
+    if save_image:
+        image_filename = f"Radio_Meteor_Detections_{year}_{month:02d}.png"
+        plt.savefig(image_filename)
     else:
         plt.show()
 
