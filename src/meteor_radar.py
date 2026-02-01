@@ -122,17 +122,23 @@ class DiskSpaceChecker(threading.Thread):
             time.sleep(1800)
 
 
-# Class for logging detections to RMOB file
-class RMBLogger():
+# Class for getting items from the config file
+class ConfigurationReader():
 
     def __init__(self):
 
         self.id = ""
-        self.Long = 0.0
+        self.id_num = 0
         self.Lat = 0.0
+        self.Long = 0.0
         self.Alt = 0.0
+        self.foff = 0.0
+        self.tx_source = ""
+        self.time_sync = ""
         self.Ver = "RMOB"
         self.Tz = 0
+        self.country = ""
+        self.region = ""
 
         self.get_config()
 
@@ -146,6 +152,12 @@ class RMBLogger():
                     if line_words[0] == 'latitude'  : self.Lat = float(line_words[1])
                     if line_words[0] == 'longitude' : self.Long = float(line_words[1])
                     if line_words[0] == 'elevation' : self.Alt = float(line_words[1])
+                    if line_words[0] == 'ID_NUM'    : self.id_num = line_words[1]
+                    if line_words[0] == 'foff'      : self.foff = float(line_words[1])
+                    if line_words[0] == 'TxSource'  : self.tx_source = line_words[1]
+                    if line_words[0] == 'TimeSync'  : self.time_sync = line_words[1]
+                    if line_words[0] == 'country'   : self.country = line_words[1]
+                    if line_words[0] == 'region'    : self.region = line_words[1]
 
         except Exception as e :
             print(e)
@@ -153,10 +165,17 @@ class RMBLogger():
         # print(self.id,self.Lat,self.Long,self.Alt)
 
 
+# Class for logging detections to RMOB file
+class RMBLogger():
+
+    def __init__(self):
+        self.config_reader = ConfigurationReader()
+
+
     # Write to RMB format R<date>_<location>.csv file as:
     # Ver,Y,M,D,h,m,s,Bri,Dur,freq,ID,Long,Lat,Alt,Tz
     def log_data(self,obs_time,Bri,Dur,freq) :
-        filename = "R" + obs_time.strftime("%Y%m%d_") + self.id + ".csv"
+        filename = "R" + obs_time.strftime("%Y%m%d_") + self.config_reader.id + ".csv"
         try:
             rmb_file = open(LOG_DIR + filename, "r")
             rmb_file.close()
@@ -167,7 +186,7 @@ class RMBLogger():
 
         try:
             rmb_file = open(LOG_DIR + filename, "a")
-            rmb_string = '{0:s},{1:s},{2:.2f},{3:.2f},{4:.2f},{5:s},{6:.5f},{7:.5f},{8:.1f},{9:d}\n'.format(self.Ver, obs_time.strftime("%Y,%m,%d,%H,%M,%S.%f")[:-3], Bri, Dur, freq, self.id, self.Long, self.Lat, self.Alt, self.Tz)
+            rmb_string = '{0:s},{1:s},{2:.2f},{3:.2f},{4:.2f},{5:s},{6:.5f},{7:.5f},{8:.1f},{9:d}\n'.format(self.config_reader.Ver, obs_time.strftime("%Y,%m,%d,%H,%M,%S.%f")[:-3], Bri, Dur, freq, self.config_reader.id, self.config_reader.Long, self.config_reader.Lat, self.config_reader.Alt, self.config_reader.Tz)
             syslog.syslog(syslog.LOG_DEBUG, "Writing to RMB file " + filename + " " + rmb_string)
             rmb_file.write(rmb_string)
             rmb_file.close()
@@ -178,33 +197,7 @@ class RMBLogger():
 # Class for logging detections to monthly csv file
 class MonthlyCsvLogger():
     def __init__(self):
-
-        self.id = ""
-        self.Lat = 0.0
-        self.Long = 0.0
-        self.foff = 0.0
-        self.tx_source = ""
-        self.time_sync = ""
-
-        self.get_config()
-
-    def get_config(self) :
-        config_file_name = CONFIG_FILE
-        try:
-            with open(config_file_name) as fp:
-                for cnt, line in enumerate(fp):
-                    line_words = (re.split("[: \n]+", line))
-                    if line_words[0] == 'ID_NUM'    : self.id = line_words[1]
-                    if line_words[0] == 'latitude'  : self.Lat = float(line_words[1])
-                    if line_words[0] == 'longitude' : self.Long = float(line_words[1])
-                    if line_words[0] == 'foff'      : self.foff = float(line_words[1])
-                    if line_words[0] == 'TxSource'  : self.tx_source = line_words[1]
-                    if line_words[0] == 'TimeSync'  : self.time_sync = line_words[1]
-
-        except Exception as e :
-            print(e)
-            syslog.syslog(syslog.LOG_DEBUG, str(e))
-
+        self.config_reader = ConfigurationReader()
 
     def log_data(self, obs_time, centre_freq, frequency, signal, noise, duration, max_snr) :
 
@@ -220,10 +213,10 @@ class MonthlyCsvLogger():
         try:
             date = obs_time.strftime('%Y-%m-%d')
             time = obs_time.strftime('%H:%M:%S.%f')
-            doppler_estimate = int((float(frequency)) - float(centre_freq) - self.foff)
-            offset_frequency = int(2000 + (float(frequency)) - float(centre_freq) - self.foff)
+            doppler_estimate = int((float(frequency)) - float(centre_freq) - self.config_reader.foff)
+            offset_frequency = int(2000 + (float(frequency)) - float(centre_freq) - self.config_reader.foff)
 
-            output_line = "%s,%s,%s,%.3f,%.3f,%s,%s,%.2f,%.2f,%.2f,%s,%s,%.2f,%s\n" % (self.id, date, time, signal, noise, offset_frequency, '0', duration, self.Lat, self.Long, self.tx_source, self.time_sync, max_snr, doppler_estimate)
+            output_line = "%s,%s,%s,%.3f,%.3f,%s,%s,%.2f,%.2f,%.2f,%s,%s,%.2f,%s\n" % (self.config_reader.id_num, date, time, signal, noise, offset_frequency, '0', duration, self.config_reader.Lat, self.config_reader.Long, self.config_reader.tx_source, self.config_reader.time_sync, max_snr, doppler_estimate)
             if verbose : print("csv output:", output_line)
 
             filename = obs_time.strftime('%Y-%m.csv')
@@ -785,9 +778,11 @@ async def streaming():
     sdr.sample_rate = SAMPLE_RATE
     sdr.center_freq = centre_freq + FREQUENCY_OFFSET       # Tuning frequency for SDR
     # sdr.set_bandwidth(10e3)
-    if sdr_gain == 'auto' : sdr.gain = sdr_gain
-    else: sdr.gain = float(sdr_gain)
-    # sdr.freq_correction = 0.0      # PPM
+    if sdr_gain == 'auto':
+        sdr.gain = sdr_gain
+    else:
+        sdr.gain = float(sdr_gain)
+    # sdr.freq_correction = 0.0      # PPM - this error correction does not provide enough resolution to be useful e.g. for small frequency errors of < 100 Hz
 
     # Loop forever taking samples
     async for samples in sdr.stream():
@@ -799,10 +794,13 @@ async def streaming():
         sample_queue.put(samples)
 
         # Add the sample data to the waterfall queue for the waterfall display
-        try:
-            if waterfall_queue.full() : waterfall_queue.get_nowait()
-            waterfall_queue.put_nowait(samples)
-        except: pass
+        if display_waterfall:
+            try:
+                if waterfall_queue.full():
+                    waterfall_queue.get_nowait()
+                waterfall_queue.put_nowait(samples)
+            except:
+                pass
 
     # to stop streaming:
     await sdr.stop()
@@ -849,7 +847,7 @@ if __name__ == "__main__":
     detection_frequency_band = args['detectionband']
     noise_calculation_band = args['noiseband']
 
-    if save_fft_samples :
+    if save_fft_samples:
         save_raw_samples = False
 
     # Set up the logging
@@ -857,7 +855,7 @@ if __name__ == "__main__":
 
     print("Detection frequency:", centre_freq)
     print("SNR threshold:", snr_threshold)
-    if save_raw_samples :
+    if save_raw_samples:
         print("Saving raw sample data")
     else:
         print("Saving data in FFT format")
@@ -886,7 +884,7 @@ if __name__ == "__main__":
     diskspacechecker.start()
 
     # Start the waterfall display
-    if  display_waterfall :
+    if  display_waterfall:
         p = Waterfall(centre_freq + FREQUENCY_OFFSET, SAMPLE_RATE, waterfall_queue)
         p.start()
 
