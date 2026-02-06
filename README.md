@@ -14,7 +14,7 @@ Recommended HB9-2 HB9CV 2 ELEMENT ANTENNA for the GRAVES frequency 143.05 MHz.
 
 #### RPi control box
 A Raspberry Pi 3B or 4, with one available USB port. Power supply. 8GB or larger SD Card.
-Recommended OS is Raspbian Bookworm.
+Recommended OS is Raspbian Bookworm or Trixie.
 
 A wifi or wired ethernet connection to the internet is required to maintain the NTP time.
 
@@ -86,7 +86,7 @@ The analyse_detection.py matplotlib tool can be used to visualise and analyse th
 
 ### Installation
 The software uses the pyrtlsdr package for reading the USB data from the RTL SDR dongle. It also needs python-matplotlib and numpy for the FFT routines.
-The required python modules can be installed with the installation commands below, and has been tested on Raspbian Bookworm:
+The required python modules can be installed with the installation commands below, and has been tested on Raspbian Bookworm and Trixie:
 ```
 # Clone this repository
 git clone https://github.com/rabssm/MeteorRadio.git
