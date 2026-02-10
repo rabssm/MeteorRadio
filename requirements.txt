@@ -1,5 +1,5 @@
 # rtlsdr package still needs deprecated setuptools API
-setuptools>=80.10.2
+setuptools<81
 
 numpy>=2.2.3
 scipy>=1.15.1
