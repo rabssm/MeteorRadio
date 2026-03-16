@@ -92,8 +92,8 @@ The required python modules can be installed with the installation commands belo
 sudo apt update && sudo apt install rtl-sdr libopenblas-dev
 
 # Create a virtual environmemt in which to run the software
-python -m venv ~/vMeteorRadio
-source ~/vMeteorRadio/bin/activate
+python -m venv $HOME/vMeteorRadio
+source $HOME/vMeteorRadio/bin/activate
 
 # Clone this repository and install the requirements
 cd $HOME
