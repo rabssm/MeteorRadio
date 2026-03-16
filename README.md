@@ -20,7 +20,7 @@ A wifi or wired ethernet connection to the internet is required to maintain the 
 
 ## Software
 ### Acquisition and Detection Software
-The software uses Python3.
+The software uses python3.
 The acquisition software reads the raw data from the USB radio and does a fast fourier transform (FFT) on each sample block as it is received. The FFT of each sample block is then analysed to check for a peak signal above the SNR threshold at a frequency +/- 120 Hz of the target frequency (GRAVES 143.05 MHz).
 After each detection trigger, the software stores the raw sample data for the next 10 seconds as an SMP file. If the --fft option is used, the detection data is stored in 2 files, the raw audio data in the form of a raw audio file, and the FFT data in the form of an SPG numpy npz file.
 
@@ -88,16 +88,19 @@ The analyse_detection.py matplotlib tool can be used to visualise and analyse th
 The software uses the pyrtlsdr package for reading the USB data from the RTL SDR dongle. It also needs python-matplotlib and numpy for the FFT routines.
 The required python modules can be installed with the installation commands below, and has been tested on Raspbian Bookworm and Trixie:
 ```
-# Clone this repository
-git clone https://github.com/rabssm/MeteorRadio.git
-
 # Install required apt packages
 sudo apt update && sudo apt install rtl-sdr libopenblas-dev
 
-# Create a virtual environmemt in which to install and run the software
+# Create a virtual environmemt in which to run the software
 python -m venv ~/vMeteorRadio
 source ~/vMeteorRadio/bin/activate
-cd MeteorRadio
+
+# Clone this repository and install the requirements
+cd $HOME
+git clone https://github.com/rabssm/MeteorRadio.git
+
+# Change into the MeteorRadio directory and install the package requirements
+cd $HOME/MeteorRadio
 pip install -r requirements.txt
 ```
 
@@ -160,10 +163,12 @@ Data provided for https://radiometeordetection.org/
 A python script is provided to produce output data to allow use by the RMOB colorgramme software to produce an RMOB colorgramme for upload to RMOB.
 
 ```
-python monthly_rmob.py -y 2022 -m 10 -o Observer
+~/vMeteorRadio/bin/python monthly_rmob.py -y 2022 -m 10 -o Observer
 ```
 
 ## Running the acquisition software
+
+The python scripts are located at $HOME/MeteorRadio/src if you cloned the repository from the $HOME directory.
 
 To get help using the acquisition software, run the command:
 ```
@@ -182,12 +187,12 @@ python analyse_detection.py ~/radar_data
 
 To visualise the monthly meteor detections recorded in the directory ~/radar_data/Logs :
 ```
-python monthly_graph.py
+~/vMeteorRadio/bin/python monthly_graph.py
 ```
 ![alt text](https://github.com/rabssm/MeteorRadio/blob/main/doc/Radio_Meteor_Detections_2025-12.png)
 
 
-The raw sample audio files have a sample rate of 37.5k. They can be converted to .wav files using sox or played :
+The raw sample audio files have a sample rate of 37.5k. They can be converted to .wav files using sox or played:
 ```
 sox -r 37.5k -b 16 -e signed-integer -c 1 <audio_file.raw> <audio_file.wav>
 
@@ -206,8 +211,8 @@ To make the software run automatically on every boot, add the command to crontab
 crontab -e
 ```
 
-Then add the following line at the end of the crontab (e.g.) :
+Then add the following line at the end of the crontab (e.g.):
 ```
-@reboot sleep 60 && ~/vMeteorRadio/bin/python -u ~/source/MeteorRadio/src/meteor_radar.py -s 40 -g 50
+@reboot sleep 60 && ~/vMeteorRadio/bin/python -u ~/MeteorRadio/src/meteor_radar.py -s 40 -g 50
 ```
 
