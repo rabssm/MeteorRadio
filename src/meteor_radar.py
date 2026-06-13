@@ -409,7 +409,11 @@ class SampleAnalyser(threading.Thread):
         psd_queue = mpQueue(maxsize=4)
 
         # Get the first set of samples
-        samples = sample_queue.get()
+        try:
+            samples = sample_queue.get(timeout=10)
+        except Queue.Empty as e:
+            syslog.syslog(syslog.LOG_DEBUG, str(e))
+
 
         # Initialise SDR frequency centre variables
         self.sdr_freq = sdr.center_freq
@@ -451,7 +455,11 @@ class SampleAnalyser(threading.Thread):
         # Get samples from the queue as they arrive, analyse them and check for a detection trigger
         while True :
             # print("Queue lengths", sample_queue.qsize(), psd_queue.qsize())
-            samples = sample_queue.get()
+            try:
+                samples = sample_queue.get(timeout=10)
+            except Queue.Empty as e:
+                syslog.syslog(syslog.LOG_DEBUG, str(e))
+
 
             # Do the PSD analysis in a thread. If the queue is full then we must skip to the next set of samples
             if not psd_queue.full() :
@@ -823,6 +831,7 @@ if __name__ == "__main__":
     ap.add_argument("-f", "--frequency", type=float, default=143.05e6, help="Centre frequency. Default is GRAVES (143.05 MHz)")
     ap.add_argument("-g", "--gain", type=str, default=str(SDR_GAIN), help="SDR tuner gain (0-50, auto). Default is 50")
     ap.add_argument("-s", "--snr_threshold", type=float, default=45, help="SNR threshold. Default is 45 (~16 dB)")
+    ap.add_argument("--sdrserialnum", type=int, default=None, help="SDR Serial number. For systems with multiple SDR's")
     ap.add_argument("-r", "--raw", action='store_true', default=True, help="Store raw sample data - default")
     ap.add_argument("--fft", action='store_true', help="Store data as FFT")
     ap.add_argument("-a", "--audio", action='store_true', help="Enable saving of audio wav file")
@@ -846,6 +855,7 @@ if __name__ == "__main__":
     verbose = args['verbose']
     detection_frequency_band = args['detectionband']
     noise_calculation_band = args['noiseband']
+    sdr_serial_number = args['sdrserialnum']
 
     if save_fft_samples:
         save_raw_samples = False
@@ -873,7 +883,16 @@ if __name__ == "__main__":
     waterfall_queue = mpQueue(maxsize=1)
 
     # Create the SDR instance
-    sdr = RtlSdr()
+    if sdr_serial_number is None:
+        sdr = RtlSdr()
+    else:
+        # Get a list of available SDR serial numbers
+        serial_numbers = RtlSdr.get_device_serial_addresses()
+        print("Available SDR serial numbers:", serial_numbers)
+
+        # Find the device index for the given serial number
+        device_index = RtlSdr.get_device_index_by_serial(str(sdr_serial_number))
+        sdr = RtlSdr(device_index)
 
     # Start the sample analyser
     sample_analyser = SampleAnalyser(centre_freq)
