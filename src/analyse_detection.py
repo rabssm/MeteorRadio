@@ -3,6 +3,7 @@ import datetime
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import matplotlib.patheffects as path_effects
+import matplotlib.colors as mcolors
 import scipy.interpolate as si
 from scipy.signal import ShortTimeFFT
 from scipy.signal.windows import hamming
@@ -60,17 +61,46 @@ class MeteorPlotter() :
 
     def __init__(self):
 
-        self.cmap_color = 'gist_heat'
+        self.cmap_color = 'inferno'
+        self.vmin = -20
         self.cmap_color_list = plt.colormaps()
         self.cmap_index = self.cmap_color_list.index(self.cmap_color)
         self.last_deleted_file_queue = LifoQueue()
         self.file_name = ''
 
-    def set_colour(self, scheme) :
-        self.cmap_color = scheme
+    def set_colour(self, scheme):
+        if scheme == "spectrumlab":
+            self.set_colour_spectrumlab()
+        else:
+            self.cmap_color = scheme
+
+    def set_colour_spectrumlab(self):
+        # 1. Define Spectrum Lab's exact colour sequence
+        # Black -> Grey -> Blue -> Green -> Yellow -> Orange -> Red -> White
+        spec_lab_colors = [
+            '#000000', # Black (0 dB / Noise floor)
+            '#808080', # Grey
+            '#0000FF', # Blue
+            '#00FF00', # Green
+            '#FFFF00', # Yellow
+            '#FF7F00', # Orange
+            '#FF0000', # Red
+            '#FFFFFF'  # White (Max Signal / Clipping)
+        ]
+
+        # 2. Create the custom Matplotlib colormap
+        cmap_spectrum_lab = mcolors.LinearSegmentedColormap.from_list(
+            'SpectrumLab', 
+            spec_lab_colors, 
+            N=256
+        )
+        self.cmap_color = cmap_spectrum_lab
+        self.vmin = -10
+
 
     def set_file_name(self, file_name) :
         self.file_name = file_name
+
 
     # Show help window
     def help(self) :
@@ -239,7 +269,7 @@ class MeteorPlotter() :
         # Plot the spectrogram data 2d
         if flipped :
             fig, ax = plt.subplots(figsize=(9,7))
-            ax.pcolormesh(bins, f, Pxx, cmap=self.cmap_color, shading='auto')
+            ax.pcolormesh(bins, f, Pxx, cmap=self.cmap_color, vmin=self.vmin, shading='auto')
             ax.set_title('Meteor Radio Detection  ' + str(obs_time)[:-3] + '\n' + stats_string, fontsize=10)
             ax.set_ylabel('Frequency (Hz) around ' + str(centre_freq/1e6) + ' MHz')
             ax.set_xlabel('Time (s)' )
@@ -255,7 +285,7 @@ class MeteorPlotter() :
                 ax.fmt_xdata = mdates.DateFormatter('%H:%M:%S.%f')
         else :
             fig, ax = plt.subplots(figsize=(6,9))
-            ax.pcolormesh(f, bins, Pxx.T, cmap=self.cmap_color, shading='auto')
+            ax.pcolormesh(f, bins, Pxx.T, cmap=self.cmap_color, vmin=self.vmin, shading='auto')
             ax.set_title('Meteor Radio Detection  ' + str(obs_time)[:-3] + '\n' + stats_string, fontsize=10)
             ax.set_xlabel('Frequency (Hz) around ' + str(centre_freq/1e6) + ' MHz')
             ax.set_ylabel('Time (s)' )
@@ -431,7 +461,7 @@ if __name__ == "__main__":
     ap.add_argument("-t", "--sortbyctime", action='store_true', help="View files sorted by ctime")
     ap.add_argument("--timeres", action='store_true', help="Display for best time resolution")
     ap.add_argument("--headecho", action='store_true', help="Display for head acho analysis")
-    ap.add_argument("--colour", type=str, default="gist_heat", help="Colour Scheme")
+    ap.add_argument("--colour", type=str, default="inferno", help="Colour Scheme")
     # ap.add_argument("-f", "--frequency", type=float, default=143.05e6, help="Centre frequency")
     # ap.add_argument("-r", "--rate", type=int, default=960000, help="Sample rate")
     ap.add_argument("-3", "--3d", action='store_true', help="Show 3d specgram")
@@ -553,6 +583,14 @@ if __name__ == "__main__":
     else:
         # if only one file provided, process it and finish
         filenames = file_or_dir
+
+        if len(filenames) == 1 :
+            dirname = os.path.dirname(filenames[0])
+            npz_filenames = sorted(glob.glob(dirname + '/*.npz'), reverse=False)
+            if len(npz_filenames) > 1 :
+                # npz_filenames = list(dict.fromkeys(npz_filenames))    # Ensure filename list is unique
+                file_index = npz_filenames.index(filenames[0])
+                filenames = npz_filenames
 
     if sort_by_ctime : filenames.sort(key=os.path.getctime)
 
