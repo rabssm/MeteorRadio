@@ -43,7 +43,7 @@ e.g.
 SMP_143050000_20220622_152435_196974.npz
 ```
 
-These raw observation detection files are about 3.1 MB in size. They contain all of the information required for a detailed analysis of the meteor detection for example for high resolution head echo analysis.
+These raw observation detection files are about 3.1 MB in size. These raw observation files record the I/Q data from the SDR (decimated by a factor of 8) and have a sample rate of 37500 samples/s. They contain all of the information required for a detailed analysis of the meteor detection for example for high resolution head echo analysis and can be converted into audio .wav files using the smp2wav.py script.
 
 ##### FFT Output filename format
 FFT observation data is required when the --fft command line option is used.
@@ -182,7 +182,7 @@ To start the acquisition software in verbose mode with a detection threshold SNR
 
 To analyze the meteor detection FFT data in the .npz files in the output directory ~/radar_data :
 ```
-python analyse_detection.py ~/radar_data
+~/vMeteorRadio/bin/python analyse_detection.py ~/radar_data
 ```
 
 To visualise the monthly meteor detections recorded in the directory ~/radar_data/Logs :
