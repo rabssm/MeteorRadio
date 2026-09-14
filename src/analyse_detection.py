@@ -263,13 +263,16 @@ class MeteorPlotter() :
         fmt = mdates.DateFormatter('%H:%M:%S')
 
         # Form the stats string
+        std = np.std(Pxx)
         stats_string = 'Mean:{0:8.2f}  Max:{1:8.2f}  PeakF:{2:7.1f}  SNR:{3:7.2f} dB'.format(mn, sigmax, peak_freq, snr)
+        # print("Min", np.min(Pxx))
+        # print("std", np.std(Pxx))
 
 
         # Plot the spectrogram data 2d
         if flipped :
             fig, ax = plt.subplots(figsize=(9,7))
-            ax.pcolormesh(bins, f, Pxx, cmap=self.cmap_color, shading='auto')
+            ax.pcolormesh(bins, f, Pxx, cmap=self.cmap_color, vmin=mn-(2*std), shading='auto')
             ax.set_title('Meteor Radio Detection  ' + str(obs_time)[:-3] + '\n' + stats_string, fontsize=10)
             ax.set_ylabel('Frequency (Hz) around ' + str(centre_freq/1e6) + ' MHz')
             ax.set_xlabel('Time (s)' )
@@ -285,7 +288,7 @@ class MeteorPlotter() :
                 ax.fmt_xdata = mdates.DateFormatter('%H:%M:%S.%f')
         else :
             fig, ax = plt.subplots(figsize=(6,9))
-            ax.pcolormesh(f, bins, Pxx.T, cmap=self.cmap_color, shading='auto')
+            ax.pcolormesh(f, bins, Pxx.T, cmap=self.cmap_color, vmin=mn-(2*std), shading='auto')
             ax.set_title('Meteor Radio Detection  ' + str(obs_time)[:-3] + '\n' + stats_string, fontsize=10)
             ax.set_xlabel('Frequency (Hz) around ' + str(centre_freq/1e6) + ' MHz')
             ax.set_ylabel('Time (s)' )
