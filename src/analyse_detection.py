@@ -615,7 +615,7 @@ if __name__ == "__main__":
 
                 # Extract the FFT data. bins is time in seconds, but old format required division by the sample rate
                 bins = npz_data['bins']
-                if sample_rate is not None : bins /= sample_rate
+                # if sample_rate is not None : bins /= sample_rate
                 f = npz_data['f']
                 Pxx = npz_data['Pxx']
 
