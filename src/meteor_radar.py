@@ -1,3 +1,19 @@
+# MeteorRadio - meteor detection software
+# Copyright (C) 2026 rabssm
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <https://www.gnu.org/licenses/>.
+
 import glob
 import time
 from rtlsdr import *
@@ -44,7 +60,7 @@ SAMPLES_BEFORE_TRIGGER = 6            # Number of samples wanted before the trig
 # RTL SDR settings - 225001 to 300000 and 900001 to 3200000
 SAMPLE_RATE = 300000       #    960000 (262144-causes noise near 143.05) 262144, 240000
 SDR_GAIN = 50
-DECIMATION = 8             # Reduce audio sample rate from 300k to 37.5k
+DECIMATION = 8             # Decimate sample rate (8 reduces smaple rate from 300k to 37.5k)
 
 # FFT Settings
 FREQUENCY_OFFSET = -2000   # Tuning frequency offset from centre (so signal appears as 2kHz audio on upper sideband)
