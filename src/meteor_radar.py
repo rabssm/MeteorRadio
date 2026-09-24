@@ -1,5 +1,6 @@
 # MeteorRadio - meteor detection software
 # Copyright (C) 2026 rabssm
+# Modified 2026-09-24 by Tomasz Spica: optional adaptive capture support.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -76,6 +77,20 @@ HOP=int(NUM_FFT*(1-ANALYSIS_OVERLAP))
 # Trigger condition settings
 TRIGGERS_REQUIRED = 1
 MAX_MEDIAN_NOISE_RATIO = 3
+
+# Optional adaptive capture settings.
+# When --adaptivecapture is enabled, preserve pre-trigger context and stop
+# after the signal fades instead of always waiting for a fixed buffer window.
+ADAPTIVE_PRE_SECONDS = 3.0
+ADAPTIVE_MIN_POST_SECONDS = 0.8
+ADAPTIVE_HANG_SECONDS = 1.0
+ADAPTIVE_MAX_POST_SECONDS = 10.0
+ADAPTIVE_RELEASE_FACTOR = 0.33
+ADAPTIVE_RELEASE_MIN_RATIO = 12.0
+
+# About 17.5 seconds with the default RTL-SDR stream block size/rate.
+# This is enough for 3 s PRE + 10 s maximum POST with margin.
+ADAPTIVE_BUFFER_SAMPLES = 40
 
 # Handle process signals
 def signalHandler (signum, frame) :
@@ -398,6 +413,13 @@ class SampleAnalyser(threading.Thread):
         self.trigger_count = 0
         self.trigger_wait_counter = 0
 
+        # Optional adaptive-capture state.
+        self.adaptive_capture_active = False
+        self.adaptive_first_trigger_time = None
+        self.adaptive_first_trigger_monotonic = None
+        self.adaptive_capture_started_monotonic = None
+        self.adaptive_last_signal_monotonic = None
+
         self.fmax3_count = 0
 
         self.analysis_thread = None
@@ -500,46 +522,159 @@ class SampleAnalyser(threading.Thread):
         stats = ' Mean:{0:8.4f}  Median:{1:8.4f}  Max:{2:10.4f}  PeakF:{3:12.6f}  SNR:{4:10.2f}'.format(mn, sigmedian, sigmax, peak_freq, snr)
         if verbose : print(datetime.datetime.now(), stats)
 
+        now_wall = datetime.datetime.now()
+        now_mono = time.monotonic()
+
         # If the signal level is high enough above the noise level, trigger a detection and log it
         trigger = snr > snr_threshold
         if trigger :
-            print("Triggered at", datetime.datetime.now())
+            print("Triggered at", now_wall)
             if self.trigger_count == 0 :
-                syslog.syslog(syslog.LOG_DEBUG, "Radio detection triggered at " + str(datetime.datetime.now()) + stats)
+                syslog.syslog(syslog.LOG_DEBUG, "Radio detection triggered at " + str(now_wall) + stats)
                 syslog.syslog(syslog.LOG_DEBUG, "Median noise ratio: " + str(ratio_median))
 
                 if ratio_median > MAX_MEDIAN_NOISE_RATIO :
                     syslog.syslog(syslog.LOG_DEBUG, "Detection cancelled due to high noise")
                     trigger = False
                     self.trigger_count = -1
+                elif adaptive_capture_enabled :
+                    self.adaptive_first_trigger_time = now_wall
+                    self.adaptive_first_trigger_monotonic = now_mono
 
             self.trigger_count += 1
             print("Trigger count:", self.trigger_count)
 
         else:
-            # Compute rolling average noise
             self.noise_deque.append(mn)
-            # self.ave_noise = np.average(self.noise_deque)
 
-        # If we have had a detection, wait for further samples before saving the detection in a thread.
-        if self.trigger_count >= TRIGGERS_REQUIRED :
-            self.trigger_wait_counter += 1
-            # print("Trigger waiting for samples:", self.trigger_wait_counter)
-            if self.trigger_wait_counter >= SAMPLES_LENGTH-SAMPLES_BEFORE_TRIGGER :
-                # Don't save any more sample data until any previous saves have completed
-                # if self.save_process is None or not self.save_process.is_alive() :
-                self.save_samples()
+        # Preserve the original fixed-window behaviour unless adaptive capture
+        # has explicitly been enabled on the command line.
+        if not adaptive_capture_enabled :
+            if self.trigger_count >= TRIGGERS_REQUIRED :
+                self.trigger_wait_counter += 1
+                if self.trigger_wait_counter >= SAMPLES_LENGTH-SAMPLES_BEFORE_TRIGGER :
+                    self.save_samples()
+                    self.trigger_count = 0
+                    self.trigger_wait_counter = 0
+            else :
+                if not trigger: self.trigger_count = 0
+            return
+
+        # Start an adaptive window after the normal trigger requirement is met.
+        if (
+            not self.adaptive_capture_active
+            and self.trigger_count >= TRIGGERS_REQUIRED
+        ):
+            self.adaptive_capture_active = True
+            if self.adaptive_first_trigger_monotonic is None :
+                self.adaptive_first_trigger_monotonic = now_mono
+            if self.adaptive_first_trigger_time is None :
+                self.adaptive_first_trigger_time = now_wall
+            self.adaptive_capture_started_monotonic = self.adaptive_first_trigger_monotonic
+            self.adaptive_last_signal_monotonic = now_mono
+
+            release_threshold = min(
+                float(snr_threshold) * 0.80,
+                max(
+                    ADAPTIVE_RELEASE_MIN_RATIO,
+                    float(snr_threshold) * ADAPTIVE_RELEASE_FACTOR,
+                ),
+            )
+            syslog.syslog(
+                syslog.LOG_DEBUG,
+                (
+                    "Adaptive capture START"
+                    " release_ratio=" + f"{release_threshold:.2f}"
+                    + " pre=" + f"{ADAPTIVE_PRE_SECONDS:.2f}s"
+                    + " hang=" + f"{ADAPTIVE_HANG_SECONDS:.2f}s"
+                    + " max_post=" + f"{ADAPTIVE_MAX_POST_SECONDS:.2f}s"
+                ),
+            )
+
+        if self.adaptive_capture_active :
+            release_threshold = min(
+                float(snr_threshold) * 0.80,
+                max(
+                    ADAPTIVE_RELEASE_MIN_RATIO,
+                    float(snr_threshold) * ADAPTIVE_RELEASE_FACTOR,
+                ),
+            )
+            if snr >= release_threshold :
+                self.adaptive_last_signal_monotonic = now_mono
+
+            elapsed = now_mono - self.adaptive_capture_started_monotonic
+            quiet = now_mono - self.adaptive_last_signal_monotonic
+
+            stop_reason = None
+            if elapsed >= ADAPTIVE_MAX_POST_SECONDS :
+                stop_reason = "max-post"
+            elif elapsed >= ADAPTIVE_MIN_POST_SECONDS and quiet >= ADAPTIVE_HANG_SECONDS :
+                stop_reason = "fade"
+
+            if stop_reason is not None :
+                trigger_time = self.adaptive_first_trigger_time
+                syslog.syslog(
+                    syslog.LOG_DEBUG,
+                    (
+                        "Adaptive capture STOP"
+                        " reason=" + stop_reason
+                        + " elapsed=" + f"{elapsed:.2f}s"
+                        + " quiet=" + f"{quiet:.2f}s"
+                        + " snr_ratio=" + f"{snr:.2f}"
+                        + " release_ratio=" + f"{release_threshold:.2f}"
+                    ),
+                )
+                self.save_samples(
+                    adaptive_trigger_time=trigger_time,
+                    adaptive_stop_reason=stop_reason,
+                    adaptive_post_seconds=elapsed,
+                )
+                self.adaptive_capture_active = False
+                self.adaptive_first_trigger_time = None
+                self.adaptive_first_trigger_monotonic = None
+                self.adaptive_capture_started_monotonic = None
+                self.adaptive_last_signal_monotonic = None
                 self.trigger_count = 0
                 self.trigger_wait_counter = 0
+                return
 
-        # Otherwise reset the trigger count
-        else :
-            if not trigger: self.trigger_count = 0
+        if not self.adaptive_capture_active and not trigger :
+            self.trigger_count = 0
+            self.adaptive_first_trigger_time = None
+            self.adaptive_first_trigger_monotonic = None
 
 
     # Convert sample data to FFT, restrict to narrow freq band and save
-    def save_samples(self) :
-        timed_sample_snapshot = timed_sample_deque.copy()
+    def save_samples(
+        self,
+        adaptive_trigger_time=None,
+        adaptive_stop_reason="",
+        adaptive_post_seconds=0.0,
+    ) :
+        timed_sample_snapshot = list(timed_sample_deque.copy())
+
+        # A manual SIGUSR1 save keeps the original fixed-size snapshot even
+        # when the rolling buffer is larger for adaptive capture.
+        if adaptive_trigger_time is None :
+            timed_sample_snapshot = timed_sample_snapshot[-SAMPLES_LENGTH:]
+        else :
+            capture_start = adaptive_trigger_time - datetime.timedelta(
+                seconds=ADAPTIVE_PRE_SECONDS
+            )
+            timed_sample_snapshot = [
+                item for item in timed_sample_snapshot
+                if item.sample_time >= capture_start
+            ]
+
+        if not timed_sample_snapshot :
+            syslog.syslog(syslog.LOG_DEBUG, "No sample data available to save")
+            return
+
+        trigger_time_str = (
+            adaptive_trigger_time.isoformat()
+            if adaptive_trigger_time is not None
+            else ""
+        )
         all_samples = []
 
         # Subtract sample time to give actual obs_time of start of 1st sample
@@ -561,10 +696,10 @@ class SampleAnalyser(threading.Thread):
         if self.save_raw_samples :
             # Set the raw sample saving process off in one of 2 available subprocesses
             if self.save_process1 is None or not self.save_process1.is_alive() :
-                self.save_process1 = Process(target=self.save_raw_sample_data, args=(samples_forspecgram, self.sdr_freq, self.centre_freq, self.sdr_sample_rate, obs_time))
+                self.save_process1 = Process(target=self.save_raw_sample_data, args=(samples_forspecgram, self.sdr_freq, self.centre_freq, self.sdr_sample_rate, obs_time, trigger_time_str, adaptive_stop_reason, adaptive_post_seconds))
                 self.save_process1.start()
             elif self.save_process2 is None or not self.save_process2.is_alive() :
-                self.save_process2 = Process(target=self.save_raw_sample_data, args=(samples_forspecgram, self.sdr_freq, self.centre_freq, self.sdr_sample_rate, obs_time))
+                self.save_process2 = Process(target=self.save_raw_sample_data, args=(samples_forspecgram, self.sdr_freq, self.centre_freq, self.sdr_sample_rate, obs_time, trigger_time_str, adaptive_stop_reason, adaptive_post_seconds))
                 self.save_process2.start()
 
 
@@ -585,7 +720,17 @@ class SampleAnalyser(threading.Thread):
 
 
     # Function to save the raw sample data as an SMP file
-    def save_raw_sample_data(self, raw_samples, sda_centre_freq, centre_freq, sample_rate, obs_time) :
+    def save_raw_sample_data(
+        self,
+        raw_samples,
+        sda_centre_freq,
+        centre_freq,
+        sample_rate,
+        obs_time,
+        trigger_time="",
+        adaptive_stop_reason="",
+        adaptive_post_seconds=0.0,
+    ) :
 
         # Decimate to reduce sample rate from 300 kHz to 37.5 kHz
         decimated_samples = scipy_signal.decimate(raw_samples, DECIMATION)
@@ -594,7 +739,26 @@ class SampleAnalyser(threading.Thread):
         sample_filename = self.captures_dir + '/SMP_' + str(int(centre_freq)) + obs_time.strftime('_%Y%m%d_%H%M%S_%f.npz')
         syslog.syslog(syslog.LOG_DEBUG, "Saving " + sample_filename)
         print("Saving", sample_filename)
-        np.savez(sample_filename, obs_time=str(obs_time), centre_freq=centre_freq, sample_rate=self.decimated_sample_rate, samples=np.array(decimated_samples).astype("complex64"))
+        sample_payload = {
+            "obs_time": str(obs_time),
+            "centre_freq": centre_freq,
+            "sample_rate": self.decimated_sample_rate,
+            "samples": np.array(decimated_samples).astype("complex64"),
+        }
+
+        # Keep the original SMP schema unchanged for non-adaptive captures.
+        if trigger_time :
+            sample_payload.update(
+                {
+                    "trigger_time": str(trigger_time),
+                    "adaptive_capture": True,
+                    "adaptive_pre_seconds": ADAPTIVE_PRE_SECONDS,
+                    "adaptive_stop_reason": str(adaptive_stop_reason),
+                    "adaptive_post_seconds": float(adaptive_post_seconds),
+                }
+            )
+
+        np.savez(sample_filename, **sample_payload)
         print("\a")
 
         # Log the data
@@ -857,6 +1021,7 @@ if __name__ == "__main__":
     ap.add_argument("-v", "--verbose", action='store_true', help="Verbose output")
     ap.add_argument("--detectionband", nargs=2, type=int, default=DETECTION_FREQUENCY_BAND, help="Frequency band for detection in Hz. Default is " + str(DETECTION_FREQUENCY_BAND) + " e.g. -120 120")
     ap.add_argument("--noiseband", nargs=2, type=int, default=NOISE_CALCULATION_BAND, help="Frequency band for noise calculation in Hz. Default is " + str(NOISE_CALCULATION_BAND) + " e.g. -500 500")
+    ap.add_argument("--adaptivecapture", action='store_true', help="Enable adaptive pre/post-trigger capture window")
     args = vars(ap.parse_args())
 
     centre_freq = args['frequency']
@@ -871,6 +1036,7 @@ if __name__ == "__main__":
     verbose = args['verbose']
     detection_frequency_band = args['detectionband']
     noise_calculation_band = args['noiseband']
+    adaptive_capture_enabled = args['adaptivecapture']
     sdr_serial_number = args['sdrserialnum']
 
     if save_fft_samples:
@@ -881,6 +1047,8 @@ if __name__ == "__main__":
 
     print("Detection frequency:", centre_freq)
     print("SNR threshold:", snr_threshold)
+    if adaptive_capture_enabled:
+        print("Adaptive capture enabled")
     if save_raw_samples:
         print("Saving raw sample data")
     else:
@@ -890,7 +1058,13 @@ if __name__ == "__main__":
     make_directories()
 
     # Deque for samples data for saving on trigger
-    timed_sample_deque = deque(maxlen=SAMPLES_LENGTH)
+    timed_sample_deque = deque(
+        maxlen=(
+            ADAPTIVE_BUFFER_SAMPLES
+            if adaptive_capture_enabled
+            else SAMPLES_LENGTH
+        )
+    )
 
     # Create the queue for the samples for analysis
     sample_queue = Queue(maxsize=10)
